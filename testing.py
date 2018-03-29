@@ -1,6 +1,14 @@
-vessel_stats = [{'louis': ['scout', [5, 5], 5, 'NONE', 'NONE']},
-                {'jean': ['warship', [4, 8], 10, 'NONE', 'NONE']}]
-vessel_position = [{'louis': [[4, 6], [5, 6], [6, 6], [4, 5], [5, 5], [6, 5], [4, 4], [5, 4], [6, 4]]}]
+environment_stats = {'board_size': (20, 20),
+                     'asteroid 1': [['x', 'y'], 'ore', 'ore/round'],
+                     'asteroid 2': [['x', 'y'], 'ore', 'ore/round']}
 
-for i in range(2):
-    print(i)
+vessel_stats = [{}, {}]
+
+vessel_position = [{}, {}]
+
+asteroid_position = [[2, 6], [16, 7]]
+
+player_estate = [{'ore_amount': 3, 'vessel': [], 'base': [5, 5]},
+                 {'ore_amount': 9, 'vessel': [], 'base': [12, 12]}]
+
+vessel_stats[0].update({'jean'})

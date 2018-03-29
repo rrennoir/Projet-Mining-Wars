@@ -260,7 +260,7 @@ def create_data(game_config):
 
     Parameter:
     ----------
-    game_config : string with all the parameters for the party (str)
+    game_config.mw : string with all the parameters for the party (str)
 
     Return:
     -------
