@@ -1,35 +1,36 @@
 from termcolor import colored
+import os
 
 
 def create_data():
     """
     create all data structure for the game
 
-    Parameter:
-    ----------
-    game_config.mw : string with all the parameters for the party (str)
-
     Return:
     -------
-    vessel : contains the informations about the vessels of the players (dico)
+    vessel : contains the information about the vessels of the players (dic)
     board : repository list of tuples used to calculate the content of each tile more easily (list)
-    players-estate : contains the ore_amount, the vessels and the base of each player (dico)
-    environment_stats : countains the board size and the ore of each asteroid (dico)
-    vessel_position : countains the position of each entire vessel into a list (dico)
+    players-estate : contains the ore_amount, the vessels and the base of each player (dic)
+    environment_stats : contains the board size and the ore of each asteroid (dic)
+    vessel_position : contains the position of each entire vessel into a list (dic)
     asteroid_position : contains the position of each asteroid (list)
 
     Version:
     --------
     Spec: Ryan Rennoir V.1 (02/03/2018)
           Schmetz Arnaud v.2 (28/03/2018)
-    Implem: Schmetz Arnaud v.1 (11/03/2018)
+    Impl: Schmetz Arnaud v.1 (11/03/2018)
     """
+    file = os.listdir('./')
+    for file_name in file:
 
-    with open('./game_config.mw') as cfg:
-        game_config = cfg.readlines()
-    # you may also want to remove whitespace characters like `\n` at the end of each line
-    # game_config = [x.strip() for x in game_config]
-    cfg.close()
+        if file_name.endswith('.mw'):
+            with open(file_name) as cfg:
+                game_config = cfg.readlines()
+                cfg.close()
+
+    if not('game_config' in locals()):
+        return  # return nothing
 
     # create the empty vessel list
     vessel_stats = [{}, {}]
@@ -221,26 +222,26 @@ def create_vessel_starting_position(player_estate):
 
         # Scout
         position = []
-        y_ref = base[1] + 1
-        for line in range(3):
-            x_ref = base[0] - 1
-            y = y_ref - line
+        column_ref = base[1] + 1
+        for column in range(3):
+            line_ref = base[0] - 1
+            column = column_ref - column
 
-            for colone in range(3):
-                x = x_ref + colone
-                position.append([x, y])
+            for line in range(3):
+                line = line_ref + line
+                position.append([line, column])
 
         create_vessel_position.append({'scout': position})
 
         # Warship
         position = []
-        y_ref = base[1] + 2
-        for line in range(5):
-            y = y_ref - line
-            x_ref = base[0] - 2
+        column_ref = base[1] + 2
+        for column in range(5):
+            line_ref = base[0] - 2
+            column = column_ref - column
 
-            for colone in range(5):
-                x = x_ref + colone
+            for line in range(5):
+                column = x_ref + colone
 
                 if not ((line == 0 or line == 4) and (colone == 0 or colone == 4)):
                     position.append([x, y])
@@ -286,6 +287,7 @@ def create_vessel_starting_position(player_estate):
 def check_asteroid(asteroid_position, case):
     """
     Check if there is an asteroid at this case
+
     Parameters:
     -----------
     asteroid_position: position of the asteroids (list)
@@ -428,26 +430,26 @@ def ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid
     --------
     specification : Arnaud Schmetz (v.1 02/03/18) Ryan Rennoir (V.2 25/03/2018)
     """
-    size = environment_stats['board_size']
+    size = environment_stats['board_size']  # get the board size
     grid = []
     for line in range(size[1]):
         y_line = []
 
-        for colone in range(size[0]):
+        for column in range(size[0]):
             color = 'white'
-            case = [colone + 1, line + 1]
+            case = [line + 1, column + 1]  # case to be check (+ 1 because start in 1,1 not in 0,0)
 
-            if not check_base(player_estate, case):
-                if not check_asteroid(asteroid_position, case):
-                    if not check_vessel(vessel_position, case):
+            if not check_base(player_estate, case):  # check if is a base
+                if not check_asteroid(asteroid_position, case):  # check if it's a asteroid
+                    if not check_vessel(vessel_position, case):  # check is it's a vessel
 
-                        y_line += colored('□', color)
+                        y_line += colored('□', color)  # it's nothing so blank case
 
                     else:
-                        y_line += vessel_character(vessel_position, vessel_stats, case)
+                        y_line += vessel_character(vessel_position, vessel_stats, case)  # it's a vessel
 
                 else:
-                    y_line += colored('▣', 'cyan')
+                    y_line += colored('▣', 'cyan')  # it's an asteroid
 
             else:
 
@@ -456,9 +458,9 @@ def ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid
                 else:
                     color = 'red'
 
-                y_line += colored('●', color)
+                y_line += colored('●', color)  # it's a base
 
-        grid.append(y_line)
+        grid.append(y_line)  # add character to the line
 
     for line in grid:
         final_line = ''
@@ -469,7 +471,35 @@ def ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid
         print(final_line)
 
 
-def move(vessel, player, vessel_stats, vessel_position, final_coordinate):
+def check_border(base, vessel_position):
+    """
+    Parameters:
+    -----------
+    base:
+    vessel_position:
+
+    Return:
+    -------
+    check_x:
+    check_y:
+
+    Version:
+    --------
+    """
+    check_line = True
+    check_column = True
+
+    for position in vessel_position:
+        if position[0] == base[0]:
+            check_line = False
+
+        if position[1] == base[1]:
+            check_column = False
+
+    return check_line, check_column
+
+
+def move(vessel, player, vessel_stats, vessel_position, final_coordinate, environment_stats):
     """
     Move the vessel case per case in the right direction
 
@@ -480,40 +510,71 @@ def move(vessel, player, vessel_stats, vessel_position, final_coordinate):
     vessel_position:
     final_coordinate:
     player: number of the player O or 1 (int)
+
+    Version:
+    --------
+    Spec: Ryan Rennoir V.1 (30/03/2018)
+    Impl: Ryan Rennoir v.1 (30/03/2018)
     """
-    position_x = vessel_stats[player][vessel][1][0]
-    position_y = vessel_stats[player][vessel][1][1]
+    position_line = vessel_stats[player][vessel][1][0]
+    position_column = vessel_stats[player][vessel][1][1]
 
-    destination_x = final_coordinate[player][vessel][0]
-    destination_y = final_coordinate[player][vessel][1]
+    destination_line = final_coordinate[player][vessel][0]
+    destination_column = final_coordinate[player][vessel][1]
 
-    if position_x != destination_x:
-        delta_x = destination_x - position_x
-        direction = delta_x // abs(delta_x)
+    base = environment_stats['board_side']
 
-        for coordinate in range(len(vessel_position[player][vessel])):
-            vessel_position[player][vessel][coordinate][0] += direction
+    check_line, check_column = check_border(base, vessel_position)
 
-        vessel_stats[player][vessel][1][0] += direction
+    if position_line != destination_line:
+        delta_line = destination_line - position_line  # get the difference of case between the vessel and the destination
+        direction = delta_line // abs(delta_line)  # get a 1 case move (positive or negative)
 
-    if position_y != destination_y:
-        delta_y = destination_y - position_y
-        direction = delta_y // abs(delta_y)
+        if direction == 1 and check_line:
+            for coordinate in range(len(vessel_position[player][vessel])):
+                vessel_position[player][vessel][coordinate][0] += direction  # move the vessel in vessel_position
 
-        for coordinate in range(len(vessel_position[player][vessel])):
-            vessel_position[player][vessel][coordinate][1] += direction
+            vessel_stats[player][vessel][1][0] += direction  # move the vessel in vessel_stat
 
-        vessel_stats[player][vessel][1][1] += direction
+    if position_column != destination_column:
+        delta_column = destination_column - position_column  # get the difference of case between the vessel and the destination
+        direction = delta_column // abs(delta_column)  # get a 1 case move (positive or negative)
+
+        if direction == 1 and check_column:
+            for coordinate in range(len(vessel_position[player][vessel])):
+                vessel_position[player][vessel][coordinate][1] += direction  # move the vessel in vessel_position
+
+            vessel_stats[player][vessel][1][1] += direction  # move the vessel in vessel_stat
 
 
-vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position, vessel_start_position = create_data()
+def game():
+    """
+    The game itself with the loop and all function call
 
-final_coordinate = [{'jean': [4, 4]}, {'louis': [12, 12]}]
+    Version:
+    --------
+    Spec: Ryan Rennoir V.1 (30/03/2018)
+    Impl: Ryan Rennoir v.1 (30/03/2018)
+    """
+    file = os.listdir('./')
+    for file_name in file:
 
-create_warship('jean', player_estate, 0, vessel_stats, vessel_position, vessel_start_position)
+        if file_name.endswith('.cfg'):
+            with open(file_name) as cfg:
+                config = cfg.readlines()
+                cfg.close()
 
-print(vessel_position)
-move('jean', 0, vessel_stats, vessel_position, final_coordinate)
-print(vessel_stats)
-print(vessel_position)
-ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid_position)
+    if not('config' in locals()):
+        return  # get out of the game
+
+    vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position, vessel_start_position = create_data()
+
+    final_coordinate = [{'jean': [4, 4]}, {'louis': [12, 12]}]
+
+    create_warship('jean', player_estate, 0, vessel_stats, vessel_position, vessel_start_position)
+    create_scout('louis', player_estate, 1, vessel_stats, vessel_position, vessel_start_position)
+
+    # move('jean', 0, vessel_stats, vessel_position, final_coordinate)
+    # move('louis', 1, vessel_stats, vessel_position, final_coordinate)
+
+    ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid_position)
