@@ -8,18 +8,19 @@ def create_data():
 
     Return:
     -------
-    vessel : contains the information about the vessels of the players (dic)
-    board : repository list of tuples used to calculate the content of each tile more easily (list)
-    players-estate : contains the ore_amount, the vessels and the base of each player (dic)
+    vessel_stats : contains the information about the vessels of the players (lis)
+    players-estate : contains the ore_amount, the vessels and the base of each player (list)
     environment_stats : contains the board size and the ore of each asteroid (dic)
-    vessel_position : contains the position of each entire vessel into a list (dic)
+    vessel_position : contains the position of each entire vessel into a list (list)
     asteroid_position : contains the position of each asteroid (list)
 
     Version:
     --------
     Spec: Ryan Rennoir V.1 (02/03/2018)
-          Schmetz Arnaud v.2 (28/03/2018)
+            Schmetz Arnaud v.1 (28/03/2018)
+
     Impl: Schmetz Arnaud v.1 (11/03/2018)
+            Ryan Rennoir V.1 (30/03/2018)
     """
     file = os.listdir('./')
     for file_name in file:
@@ -67,22 +68,23 @@ def create_scout(name, player_estate, player, vessel_stats, vessel_position, ves
 
     Parameters:
     -----------
-    vessel_position : The dictionary with all vessel position (dico)
+    vessel_position : The dictionary with all vessel position (list)
     name : Name of the vessel (str)
     player : Player number 0 or 1 (int)
     player_estate : Player stats (list)
-    vessel_stats : The dictionary with all vessel stats (dico)
+    vessel_stats : The dictionary with all vessel stats (list)
     vessel_start_position : list made at the start of the game with all the starting position of the vessels(list)
 
     Version:
     --------
     Spec: Ryan Rennoir V.2 (23/03/2018)
+    Impl: Ryan Rennoir V.1 (23/03/2018)
     """
     vessel_type = 'scout'
 
-    x = player_estate[player]['base'][0]
-    y = player_estate[player]['base'][1]
-    base = [x, y]
+    line = player_estate[player]['base'][0]
+    column = player_estate[player]['base'][1]
+    base = [line, column]
 
     vessel_stats[player].update({name: [vessel_type, base, 3, 'NONE', 'NONE']})
     player_estate[player]['vessel'].append(name)
@@ -109,9 +111,9 @@ def create_warship(name, player_estate, player, vessel_stats, vessel_position, v
     """
     vessel_type = 'warship'
 
-    x = player_estate[player]['base'][0]
-    y = player_estate[player]['base'][1]
-    base = [x, y]
+    line = player_estate[player]['base'][0]
+    column = player_estate[player]['base'][1]
+    base = [line, column]
 
     vessel_stats[player].update({name: [vessel_type, base, 18, 'NONE', 'NONE']})
     player_estate[player]['vessel'].append(name)
@@ -135,12 +137,13 @@ def create_excavator_s(name, player_estate, player, vessel_stats, vessel_positio
     Version:
     --------
     Spec: Ryan Rennoir V.2 (23/03/2018)
+    Impl: Ryan Rennoir V.1 (23/03/2018)
     """
     vessel_type = 'excavator_s'
 
-    x = player_estate[player]['base'][0]
-    y = player_estate[player]['base'][1]
-    base = [x, y]
+    line = player_estate[player]['base'][0]
+    column = player_estate[player]['base'][1]
+    base = [line, column]
 
     vessel_stats[player].update({name: [vessel_type, base, 2, 0, 'unlock']})
     player_estate[player]['vessel'].append(name)
@@ -164,12 +167,13 @@ def create_excavator_m(name, player_estate, player, vessel_stats, vessel_positio
     Version:
     --------
     Spec: Ryan Rennoir V.2 (23/03/2018)
+    Impl: Ryan Rennoir V.1 (23/03/2018)
     """
     vessel_type = 'excavator_m'
 
-    x = player_estate[player]['base'][0]
-    y = player_estate[player]['base'][1]
-    base = [x, y]
+    line = player_estate[player]['base'][0]
+    column = player_estate[player]['base'][1]
+    base = [line, column]
 
     vessel_stats[player].update({name: [vessel_type, base, 3, 0, 'unlock']})
     player_estate[player]['vessel'].append(name)
@@ -192,13 +196,14 @@ def create_excavator_l(name, player_estate, player, vessel_stats, vessel_positio
 
     Version:
     --------
-    Spec: Ryan Rennoir V.2 (23/03/2018)
+    Spec: Ryan Rennoir V.1 (23/03/2018)
+    Impl: Ryan Rennoir V.1 (23/03/2018)
     """
     vessel_type = 'excavator_l'
 
-    x = player_estate[player]['base'][0]
-    y = player_estate[player]['base'][1]
-    base = [x, y]
+    line = player_estate[player]['base'][0]
+    column = player_estate[player]['base'][1]
+    base = [line, column]
 
     vessel_stats[player].update({name: [vessel_type, base, 6, 0, 'unlock']})
     player_estate[player]['vessel'].append(name)
@@ -208,13 +213,20 @@ def create_excavator_l(name, player_estate, player, vessel_stats, vessel_positio
 
 def create_vessel_starting_position(player_estate):
     """
+    Create at the start of the game all vessels position when they are bought
+
     Parameters:
     -----------
     player_estate : Player stats (list)
 
+    Return:
+    -------
+    create_vessel_position: all position when a vessel is bought (list)
+
     Version:
     --------
     Spec: Ryan Rennoir V.1 (16/03/2018)
+    impl: Ryan Rennoir V.1 (23/03/2018)
     """
     create_vessel_position = []
     for player in range(2):
@@ -222,9 +234,9 @@ def create_vessel_starting_position(player_estate):
 
         # Scout
         position = []
-        column_ref = base[1] + 1
+        column_ref = base[1] + 1  # offset on  the top of the base
         for column in range(3):
-            line_ref = base[0] - 1
+            line_ref = base[0] - 1  # offset on the left of the base, now offset on the top left corner
             column = column_ref - column
 
             for line in range(3):
@@ -235,49 +247,50 @@ def create_vessel_starting_position(player_estate):
 
         # Warship
         position = []
-        column_ref = base[1] + 2
+        column_ref = base[1] + 2  # offset on  the top of the base
         for column in range(5):
-            line_ref = base[0] - 2
+            line_ref = base[0] - 2  # offset on the left of the base, now offset on the top left corner
             column = column_ref - column
 
             for line in range(5):
-                column = x_ref + colone
+                line = line_ref + line
 
-                if not ((line == 0 or line == 4) and (colone == 0 or colone == 4)):
-                    position.append([x, y])
+                if not ((line == 0 or line == 4) and (column == 0 or column == 4)):
+                    position.append([line, column])
 
         create_vessel_position[player].update({'warship': position})
 
         # Excavator S
-        create_vessel_position[player].update({'excavator_s': base})
+        create_vessel_position[player].update({'excavator_s': base})  # the vessel position is the base, nothing to do
 
         # Excavator M
         position = []
-        y_ref = base[1] + 1
-        for line in range(3):
-            y = y_ref - line
-            x_ref = base[0] - 1
+        column_ref = base[1] + 1  # offset on  the top of the base
+        for column in range(3):
+            line_ref = base[0] - 2  # offset on the left of the base, now offset on the top left corner
+            column = column_ref - column
 
-            for colone in range(3):
-                x = x_ref + colone
+            for line in range(3):
+                line = line_ref + column
 
-                if not ((line == 0 or line == 2) and (colone == 0 or colone == 2)):
-                    position.append([x, y])
+                if not ((line == 0 or line == 2) and
+                        (column == 0 or column == 2)):  # take only the line and column crossing by the base
+                    position.append([line, column])
 
         create_vessel_position[player].update({'excavator_m': position})
 
         # Excavator L
         position = []
-        y_ref = base[1] + 2
-        for line in range(5):
-            y = y_ref - line
-            x_ref = base[0] - 2
+        column_ref = base[1] + 2  # offset on  the top of the base
+        for column in range(5):
+            column = column_ref - column
+            line_ref = base[0] - 2  # offset on the left of the base, now offset on the top left corner
 
-            for colone in range(5):
-                x = x_ref + colone
+            for line in range(5):
+                line = line_ref + line
 
-                if not ((line != 2) and (colone != 2)):
-                    position.append([x, y])
+                if not ((line != 2) and (column != 2)):  # take only the line and column crossing the middle
+                    position.append([line, column])
 
         create_vessel_position[player].update({'excavator_l': position})
 
@@ -299,7 +312,8 @@ def check_asteroid(asteroid_position, case):
 
     Version:
     --------
-    Ryan Rennoir V.1 (23/03/2018)
+    Spec: Ryan Rennoir V.1 (23/03/2018)
+    Impl: Ryan Rennoir V.1 (23/03/2018)
     """
     for elements in asteroid_position:
         if case == elements:
@@ -309,6 +323,8 @@ def check_asteroid(asteroid_position, case):
 
 def check_base(player_estate, case):
     """
+    Check if there is a base at this case
+
     Parameters:
     -----------
     player_estate: Player stats (list)
@@ -320,7 +336,8 @@ def check_base(player_estate, case):
 
     Version:
     --------
-    Ryan Rennoir V.1 (23/03/2018)
+    Spec: Ryan Rennoir V.1 (23/03/2018)
+    Impl: Ryan Rennoir V.1 (23/03/2018)
     """
     for player in range(2):
         if case == player_estate[player]['base']:
@@ -331,6 +348,7 @@ def check_base(player_estate, case):
 def check_vessel(vessel_position, case):
     """
     Check if there are a vessel in this case
+
     Parameters:
     -----------
     vessel_position: position of all vessels (list)
@@ -342,11 +360,13 @@ def check_vessel(vessel_position, case):
 
     Version:
     --------
-    Ryan Rennoir V.1 (23/03/2018)
+    Spec: Ryan Rennoir V.1 (23/03/2018)
+    Impl: Ryan Rennoir V.1 (23/03/2018)
     """
     for player in vessel_position:
         for vessels in player:
             for position in player[vessels]:
+
                 if case == position:
                     return True
     return False
@@ -368,7 +388,8 @@ def check_vessel_type(vessel_position, vessel_stats, case):
 
     Version:
     --------
-    Ryan Rennoir V.1 (25/03/2018)
+    Spec: Ryan Rennoir V.1 (25/03/2018)
+    Impl: Ryan Rennoir V.1 (23/03/2018)
     """
     for player in range(2):
 
@@ -395,7 +416,8 @@ def vessel_character(vessel_position, vessel_stats, case):
 
     Version:
     --------
-    Ryan Rennoir V.1 (25/03/2018)
+    Spec: Ryan Rennoir V.1 (25/03/2018)
+    Impl: Ryan Rennoir V.1 (23/03/2018)
     """
     player, vessel_type = check_vessel_type(vessel_position, vessel_stats, case)
     if player == 0:
@@ -429,6 +451,7 @@ def ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid
     Version:
     --------
     specification : Arnaud Schmetz (v.1 02/03/18) Ryan Rennoir (V.2 25/03/2018)
+    Impl: Ryan Rennoir V.1 (25/03/2018)
     """
     size = environment_stats['board_size']  # get the board size
     grid = []
@@ -473,10 +496,12 @@ def ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid
 
 def check_border(base, vessel_position):
     """
+    Check if the vessel is not on a border
+
     Parameters:
     -----------
-    base:
-    vessel_position:
+    base: base coordinate (list)
+    vessel_position: contains the position of each entire vessel into a list (dic)
 
     Return:
     -------
@@ -485,6 +510,8 @@ def check_border(base, vessel_position):
 
     Version:
     --------
+    Spec: Ryan Rennoir V.1 (30/03/2018)
+    Impl: Ryan Rennoir V.1 (30/03/2018)
     """
     check_line = True
     check_column = True
@@ -506,9 +533,9 @@ def move(vessel, player, vessel_stats, vessel_position, final_coordinate, enviro
     Parameters:
     -----------
     vessel: Name of the vessel (str)
-    vessel_stats:
-    vessel_position:
-    final_coordinate:
+    vessel_stats: contains the information about the vessels of the players (dic)
+    vessel_position: contains the position of each entire vessel into a list (dic)
+    final_coordinate: contains the final position of the vessel when a received an order (list)
     player: number of the player O or 1 (int)
 
     Version:
