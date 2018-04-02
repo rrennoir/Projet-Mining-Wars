@@ -1,10 +1,15 @@
 from termcolor import colored
 import os
+import configparser
 
 
-def create_data():
+def create_data(config):
     """
     create all data structure for the game
+
+    Parameter:
+    ----------
+    config:
 
     Return:
     -------
@@ -30,18 +35,20 @@ def create_data():
                 game_config = cfg.readlines()
                 cfg.close()
 
-    if not('game_config' in locals()):
+    if not ('game_config' in locals()):
         return  # return nothing
 
     # create the empty vessel list
     vessel_stats = [{}, {}]
     vessel_position = [{}, {}]
 
+    ore = config['general'][2]
+
     # create the player_estate dictionary
-    player_estate = [{'ore_amount': 4, 'vessel': [],
+    player_estate = [{'ore_amount': ore, 'vessel': [],
                       'base': [int(game_config[3][0:str.find(game_config[3], ' ')]),
                                int(game_config[3][str.find(game_config[3], ' ') + 1:-1])]},
-                     {'ore_amount': 4, 'vessel': [],
+                     {'ore_amount': ore, 'vessel': [],
                       'base': [int(game_config[4][0:str.find(game_config[4], ' ')]),
                                int(game_config[4][str.find(game_config[4], ' ') + 1:-1])]}]
 
@@ -62,12 +69,13 @@ def create_data():
     return vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position, vessel_start_position
 
 
-def create_scout(name, player_estate, player, vessel_stats, vessel_position, vessel_start_position):
+def create_scout(name, player_estate, player, vessel_stats, vessel_position, vessel_start_position, config):
     """
     create the scout and his positions
 
     Parameters:
     -----------
+    config:
     vessel_position : The dictionary with all vessel position (list)
     name : Name of the vessel (str)
     player : Player number 0 or 1 (int)
@@ -82,17 +90,24 @@ def create_scout(name, player_estate, player, vessel_stats, vessel_position, ves
     """
     vessel_type = 'scout'
 
+    life = config[vessel_type][0]
+    tonnage = config[vessel_type][1]
+    if config[vessel_type][2]:
+        locking = 'unlock'
+    else:
+        locking = 'NONE'
+
     line = player_estate[player]['base'][0]
     column = player_estate[player]['base'][1]
     base = [line, column]
 
-    vessel_stats[player].update({name: [vessel_type, base, 3, 'NONE', 'NONE']})
+    vessel_stats[player].update({name: [vessel_type, base, life, tonnage, locking]})
     player_estate[player]['vessel'].append(name)
 
     vessel_position[player].update({name: vessel_start_position[player][vessel_type]})
 
 
-def create_warship(name, player_estate, player, vessel_stats, vessel_position, vessel_start_position):
+def create_warship(name, player_estate, player, vessel_stats, vessel_position, vessel_start_position, config):
     """
     create the warship and his positions
 
@@ -111,22 +126,30 @@ def create_warship(name, player_estate, player, vessel_stats, vessel_position, v
     """
     vessel_type = 'warship'
 
+    life = config[vessel_type][0]
+    tonnage = config[vessel_type][1]
+    if config[vessel_type][2]:
+        locking = 'unlock'
+    else:
+        locking = 'NONE'
+
     line = player_estate[player]['base'][0]
     column = player_estate[player]['base'][1]
     base = [line, column]
 
-    vessel_stats[player].update({name: [vessel_type, base, 18, 'NONE', 'NONE']})
+    vessel_stats[player].update({name: [vessel_type, base, life, tonnage, locking]})
     player_estate[player]['vessel'].append(name)
 
     vessel_position[player].update({name: vessel_start_position[player][vessel_type]})
 
 
-def create_excavator_s(name, player_estate, player, vessel_stats, vessel_position, vessel_start_position):
+def create_excavator_s(name, player_estate, player, vessel_stats, vessel_position, vessel_start_position, config):
     """
     Create the excavator S and his positions.
 
     Parameters:
     -----------
+    config:
     vessel_position : The dictionary with all vessel position (list)
     name : Name of the vessel (str)
     player : Player number 0 or 1 (int)
@@ -139,24 +162,33 @@ def create_excavator_s(name, player_estate, player, vessel_stats, vessel_positio
     Spec: Ryan Rennoir V.2 (23/03/2018)
     Impl: Ryan Rennoir V.1 (23/03/2018)
     """
+    # config
     vessel_type = 'excavator_s'
+
+    life = config[vessel_type][0]
+    tonnage = config[vessel_type][1]
+    if config[vessel_type][2]:
+        locking = 'unlock'
+    else:
+        locking = 'NONE'
 
     line = player_estate[player]['base'][0]
     column = player_estate[player]['base'][1]
     base = [line, column]
 
-    vessel_stats[player].update({name: [vessel_type, base, 2, 0, 'unlock']})
+    vessel_stats[player].update({name: [vessel_type, base, life, tonnage, locking]})
     player_estate[player]['vessel'].append(name)
 
     vessel_position[player].update({name: vessel_start_position[player][vessel_type]})
 
 
-def create_excavator_m(name, player_estate, player, vessel_stats, vessel_position, vessel_start_position):
+def create_excavator_m(name, player_estate, player, vessel_stats, vessel_position, vessel_start_position, config):
     """
     Create the excavator M and his positions.
 
     Parameters:
     -----------
+    config:
     vessel_position : The dictionary with all vessel position (list)
     name : Name of the vessel (str)
     player : Player number 0 or 1 (int)
@@ -169,24 +201,33 @@ def create_excavator_m(name, player_estate, player, vessel_stats, vessel_positio
     Spec: Ryan Rennoir V.2 (23/03/2018)
     Impl: Ryan Rennoir V.1 (23/03/2018)
     """
+    # config
     vessel_type = 'excavator_m'
+
+    life = config[vessel_type][0]
+    tonnage = config[vessel_type][1]
+    if config[vessel_type][2]:
+        locking = 'unlock'
+    else:
+        locking = 'NONE'
 
     line = player_estate[player]['base'][0]
     column = player_estate[player]['base'][1]
     base = [line, column]
 
-    vessel_stats[player].update({name: [vessel_type, base, 3, 0, 'unlock']})
+    vessel_stats[player].update({name: [vessel_type, base, life, tonnage, locking]})
     player_estate[player]['vessel'].append(name)
 
     vessel_position[player].update({name: vessel_start_position[player][vessel_type]})
 
 
-def create_excavator_l(name, player_estate, player, vessel_stats, vessel_position, vessel_start_position):
+def create_excavator_l(name, player_estate, player, vessel_stats, vessel_position, vessel_start_position, config):
     """
     Create the excavator L and his positions.
 
     Parameters:
     -----------
+    config:
     vessel_position : The dictionary with all vessel position (list)
     name : Name of the vessel (str)
     player : Player number 0 or 1 (int)
@@ -199,13 +240,21 @@ def create_excavator_l(name, player_estate, player, vessel_stats, vessel_positio
     Spec: Ryan Rennoir V.1 (23/03/2018)
     Impl: Ryan Rennoir V.1 (23/03/2018)
     """
+    # config
     vessel_type = 'excavator_l'
+
+    life = config[vessel_type][0]
+    tonnage = config[vessel_type][1]
+    if config[vessel_type][2]:
+        locking = 'unlock'
+    else:
+        locking = 'NONE'
 
     line = player_estate[player]['base'][0]
     column = player_estate[player]['base'][1]
     base = [line, column]
 
-    vessel_stats[player].update({name: [vessel_type, base, 6, 0, 'unlock']})
+    vessel_stats[player].update({name: [vessel_type, base, life, tonnage, locking]})
     player_estate[player]['vessel'].append(name)
 
     vessel_position[player].update({name: vessel_start_position[player][vessel_type]})
@@ -235,12 +284,12 @@ def create_vessel_starting_position(player_estate):
         # Scout
         position = []
         column_ref = base[1] + 1  # offset on  the top of the base
-        for column in range(3):
+        for column_nb in range(3):
             line_ref = base[0] - 1  # offset on the left of the base, now offset on the top left corner
-            column = column_ref - column
+            column = column_ref - column_nb
 
-            for line in range(3):
-                line = line_ref + line
+            for line_nb in range(3):
+                line = line_ref + line_nb
                 position.append([line, column])
 
         create_vessel_position.append({'scout': position})
@@ -248,14 +297,14 @@ def create_vessel_starting_position(player_estate):
         # Warship
         position = []
         column_ref = base[1] + 2  # offset on  the top of the base
-        for column in range(5):
+        for column_nb in range(5):
             line_ref = base[0] - 2  # offset on the left of the base, now offset on the top left corner
-            column = column_ref - column
+            column = column_ref - column_nb
 
-            for line in range(5):
-                line = line_ref + line
+            for line_nb in range(5):
+                line = line_ref + line_nb
 
-                if not ((line == 0 or line == 4) and (column == 0 or column == 4)):
+                if not((line_nb == 0 or line_nb == 4) and (column_nb == 0 or column_nb == 4)):
                     position.append([line, column])
 
         create_vessel_position[player].update({'warship': position})
@@ -266,15 +315,15 @@ def create_vessel_starting_position(player_estate):
         # Excavator M
         position = []
         column_ref = base[1] + 1  # offset on  the top of the base
-        for column in range(3):
-            line_ref = base[0] - 2  # offset on the left of the base, now offset on the top left corner
-            column = column_ref - column
+        for column_nb in range(3):
+            line_ref = base[0] - 1  # offset on the left of the base, now offset on the top left corner
+            column = column_ref - column_nb
 
-            for line in range(3):
-                line = line_ref + column
+            for line_nb in range(3):
+                line = line_ref + line_nb
 
-                if not ((line == 0 or line == 2) and
-                        (column == 0 or column == 2)):  # take only the line and column crossing by the base
+                if not ((line_nb == 0 or line_nb == 2) and
+                        (column_nb == 0 or column_nb == 2)):  # take only the line and column crossing by the base
                     position.append([line, column])
 
         create_vessel_position[player].update({'excavator_m': position})
@@ -282,14 +331,14 @@ def create_vessel_starting_position(player_estate):
         # Excavator L
         position = []
         column_ref = base[1] + 2  # offset on  the top of the base
-        for column in range(5):
-            column = column_ref - column
+        for column_nb in range(5):
+            column = column_ref - column_nb
             line_ref = base[0] - 2  # offset on the left of the base, now offset on the top left corner
 
-            for line in range(5):
-                line = line_ref + line
+            for line_nb in range(5):
+                line = line_ref + line_nb
 
-                if not ((line != 2) and (column != 2)):  # take only the line and column crossing the middle
+                if not ((line_nb != 2) and (column_nb != 2)):  # take only the line and column crossing the middle
                     position.append([line, column])
 
         create_vessel_position[player].update({'excavator_l': position})
@@ -494,7 +543,7 @@ def ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid
         print(final_line)
 
 
-def check_border(base, vessel_position):
+def check_border(board, vessel_position, config, vessel):
     """
     Check if the vessel is not on a border
 
@@ -515,23 +564,26 @@ def check_border(base, vessel_position):
     """
     check_line = True
     check_column = True
+    case = config['general'][0]
+    print(board)
 
-    for position in vessel_position:
-        if position[0] == base[0]:
+    for position in vessel_position[vessel]:
+        if position[0] - case == board[0]:
             check_line = False
 
-        if position[1] == base[1]:
+        if position[1] - case == board[1]:
             check_column = False
 
     return check_line, check_column
 
 
-def move(vessel, player, vessel_stats, vessel_position, final_coordinate, environment_stats):
+def move(vessel, player, vessel_stats, vessel_position, final_coordinate, environment_stats, config):
     """
     Move the vessel case per case in the right direction
 
     Parameters:
     -----------
+    config:
     vessel: Name of the vessel (str)
     vessel_stats: contains the information about the vessels of the players (dic)
     vessel_position: contains the position of each entire vessel into a list (dic)
@@ -543,29 +595,39 @@ def move(vessel, player, vessel_stats, vessel_position, final_coordinate, enviro
     Spec: Ryan Rennoir V.1 (30/03/2018)
     Impl: Ryan Rennoir v.1 (30/03/2018)
     """
+    case = config['general'][0]
+
     position_line = vessel_stats[player][vessel][1][0]
     position_column = vessel_stats[player][vessel][1][1]
 
     destination_line = final_coordinate[player][vessel][0]
     destination_column = final_coordinate[player][vessel][1]
 
-    base = environment_stats['board_side']
+    board = environment_stats['board_size']
 
-    check_line, check_column = check_border(base, vessel_position)
+    check_line, check_column = check_border(board, vessel_position, config, vessel)
 
     if position_line != destination_line:
-        delta_line = destination_line - position_line  # get the difference of case between the vessel and the destination
-        direction = delta_line // abs(delta_line)  # get a 1 case move (positive or negative)
+        delta_line = destination_line - position_line
+        if delta_line < 0:
+            direction = case * - 1
+        else:
+            direction = case
 
-        if direction == 1 and check_line:
+        if direction == case and check_line:
             for coordinate in range(len(vessel_position[player][vessel])):
                 vessel_position[player][vessel][coordinate][0] += direction  # move the vessel in vessel_position
 
             vessel_stats[player][vessel][1][0] += direction  # move the vessel in vessel_stat
 
     if position_column != destination_column:
-        delta_column = destination_column - position_column  # get the difference of case between the vessel and the destination
-        direction = delta_column // abs(delta_column)  # get a 1 case move (positive or negative)
+        # get the difference of case between the vessel and the destination
+        delta_column = destination_column - position_column
+
+        if delta_column < 0:
+            direction = case * - 1
+        else:
+            direction = case
 
         if direction == 1 and check_column:
             for coordinate in range(len(vessel_position[player][vessel])):
@@ -583,25 +645,45 @@ def game():
     Spec: Ryan Rennoir V.1 (30/03/2018)
     Impl: Ryan Rennoir v.1 (30/03/2018)
     """
-    file = os.listdir('./')
-    for file_name in file:
+    config = configparser.ConfigParser()
+    config.read('config.ini')
 
-        if file_name.endswith('.cfg'):
-            with open(file_name) as cfg:
-                config = cfg.readlines()
-                cfg.close()
+    general = config['general']
+    scout = config['scout']
+    warship = config['warship']
+    excavator_s = config['excavator_s']
+    excavator_m = config['excavator_m']
+    excavator_l = config['excavator_l']
 
-    if not('config' in locals()):
-        return  # get out of the game
+    game_config = {'general': [int(general['case per move']), int(general['nb_AI']), int(general['starting_ore'])],
 
-    vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position, vessel_start_position = create_data()
+                   'scout': [int(scout['life']), int(scout['range']), int(scout['max ore']), scout['lock']],
+
+                   'warship': [int(warship['life']), int(warship['range']), int(warship['max ore']), warship['lock']],
+
+                   'excavator_s': [int(excavator_s['life']), int(excavator_s['range']), int(excavator_s['max ore']),
+                                   excavator_l['lock']],
+
+                   'excavator_m': [int(excavator_m['life']), int(excavator_m['range']), int(excavator_m['max ore']),
+                                   excavator_m['lock']],
+
+                   'excavator_l': [int(excavator_l['life']), int(excavator_l['range']), int(excavator_l['max ore']),
+                                   excavator_l['lock']]}
+
+    print(game_config)
+
+    vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position, vessel_start_position \
+        = create_data(game_config)
+
+    create_excavator_m('jean', player_estate, 0, vessel_stats, vessel_position, vessel_start_position, game_config)
+    create_excavator_l('louis', player_estate, 1, vessel_stats, vessel_position, vessel_start_position, game_config)
 
     final_coordinate = [{'jean': [4, 4]}, {'louis': [12, 12]}]
 
-    create_warship('jean', player_estate, 0, vessel_stats, vessel_position, vessel_start_position)
-    create_scout('louis', player_estate, 1, vessel_stats, vessel_position, vessel_start_position)
-
-    # move('jean', 0, vessel_stats, vessel_position, final_coordinate)
-    # move('louis', 1, vessel_stats, vessel_position, final_coordinate)
+    move('jean', 0, vessel_stats, vessel_position, final_coordinate, environment_stats, game_config)
+    move('louis', 1, vessel_stats, vessel_position, final_coordinate, environment_stats, game_config)
 
     ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid_position)
+
+
+game()
