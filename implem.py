@@ -543,38 +543,38 @@ def ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid
         print(final_line)
 
 
-def check_border(board, vessel_position, config, vessel):
+def check_border(type, vessel_position, board, direction):
     """
-    Check if the vessel is not on a border
+    Check if the vessel stay in the board
 
     Parameters:
     -----------
-    base: base coordinate (list)
-    vessel_position: contains the position of each entire vessel into a list (dic)
+    type: line or column to check (str)
+    vessel_position: contains the position of each entire vessel into a list (list)
+    board: size of the game board (list)
+    direction: move to check (int)
 
     Return:
     -------
-    check_x:
-    check_y:
+    result: False if the vessel go outside , true otherwise
 
     Version:
     --------
     Spec: Ryan Rennoir V.1 (30/03/2018)
-    Impl: Ryan Rennoir V.1 (30/03/2018)
+    Impl: Ryan Rennoir V.1 (04/04/2018)
     """
-    check_line = True
-    check_column = True
-    case = config['general'][0]
-    print(board)
 
-    for position in vessel_position[vessel]:
-        if position[0] - case == board[0]:
-            check_line = False
+    if type == 'line':
+        for position in vessel_position:
+            if position[0] + direction > board[0] or position[0] + direction < 0:
 
-        if position[1] - case == board[1]:
-            check_column = False
+                return False
+    else:
+        for position in vessel_position:
+            if position[1] + direction > board[1] or position[1] + direction < 0:
+                return False
 
-    return check_line, check_column
+    return True
 
 
 def move(vessel, player, vessel_stats, vessel_position, final_coordinate, environment_stats, config):
@@ -605,35 +605,37 @@ def move(vessel, player, vessel_stats, vessel_position, final_coordinate, enviro
 
     board = environment_stats['board_size']
 
-    check_line, check_column = check_border(board, vessel_position, config, vessel)
+    if final_coordinate[player][vessel] != vessel_stats[player][vessel][1]:
 
-    if position_line != destination_line:
-        delta_line = destination_line - position_line
-        if delta_line < 0:
-            direction = case * - 1
-        else:
-            direction = case
+        if position_line != destination_line:
+            delta_line = destination_line - position_line
+            if delta_line < 0:
+                direction = case * - 1
+            else:
+                direction = case
 
-        if direction == case and check_line:
-            for coordinate in range(len(vessel_position[player][vessel])):
-                vessel_position[player][vessel][coordinate][0] += direction  # move the vessel in vessel_position
+            if check_border('line', vessel_position[player][vessel], board, direction):
+                for coordinate in vessel_position[player][vessel]:
+                    coordinate[0] += direction  # move the vessel in vessel_position
 
-            vessel_stats[player][vessel][1][0] += direction  # move the vessel in vessel_stat
+                vessel_stats[player][vessel][1][0] += direction  # move the vessel in vessel_stat
 
-    if position_column != destination_column:
-        # get the difference of case between the vessel and the destination
-        delta_column = destination_column - position_column
+        if position_column != destination_column:
+            # get the difference of case between the vessel and the destination
+            delta_column = destination_column - position_column
 
-        if delta_column < 0:
-            direction = case * - 1
-        else:
-            direction = case
+            if delta_column < 0:
+                direction = case * - 1
+            else:
+                direction = case
 
-        if direction == 1 and check_column:
-            for coordinate in range(len(vessel_position[player][vessel])):
-                vessel_position[player][vessel][coordinate][1] += direction  # move the vessel in vessel_position
+            if check_border('column', vessel_position[player][vessel], board, direction):
+                for coordinate in vessel_position[player][vessel]:
+                    coordinate[1] += direction  # move the vessel in vessel_position
 
-            vessel_stats[player][vessel][1][1] += direction  # move the vessel in vessel_stat
+                vessel_stats[player][vessel][1][1] += direction  # move the vessel in vessel_stat
+    else:
+        final_coordinate[player].pop(vessel)
 
 
 def game():
@@ -678,7 +680,7 @@ def game():
     create_excavator_m('jean', player_estate, 0, vessel_stats, vessel_position, vessel_start_position, game_config)
     create_excavator_l('louis', player_estate, 1, vessel_stats, vessel_position, vessel_start_position, game_config)
 
-    final_coordinate = [{'jean': [4, 4]}, {'louis': [12, 12]}]
+    final_coordinate = [{'jean': [20, 20]}, {'louis': [0, 0]}]
 
     move('jean', 0, vessel_stats, vessel_position, final_coordinate, environment_stats, game_config)
     move('louis', 1, vessel_stats, vessel_position, final_coordinate, environment_stats, game_config)
