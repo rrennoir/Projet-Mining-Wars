@@ -768,6 +768,19 @@ def attack(player, attacker, coord, vessel_stats, vessel_position, player_estate
                             player_estate[player]['vessel'].remove(vessels)
 
 
+def ai(player, vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position):
+    """
+    Return:
+    -------
+    command:
+
+    Version:
+    --------
+    spec: Ryan Rennoir V.1 (07/04/2018)
+    impl:
+    """
+
+
 def game():
     """
     The game itself with the loop and all function call
@@ -806,6 +819,21 @@ def game():
 
     vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position, vessel_start_position \
         = create_data(game_config)
+
+    nb_ai = game_config['general'][2]
+    if nb_ai == 2:
+        command_p1 = ai(0, vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position)
+        command_p2 = ai(1, vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position)
+
+    elif nb_ai == 1:
+        command_p1 = input()
+        command_p2 = ai(1, vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position)
+
+    else:
+        command_p1 = input()
+        command_p2 = input()
+
+    # get_order()
 
     create_warship('jean', player_estate, 0, vessel_stats, vessel_position, vessel_start_position, game_config)
     create_warship('louis', player_estate, 1, vessel_stats, vessel_position, vessel_start_position, game_config)
