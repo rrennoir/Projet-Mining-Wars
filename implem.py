@@ -502,21 +502,30 @@ def game_stats_ui(vessel_stats, player_estate, environment_stats):
     spec: Ryan Rennoir V.1 (07/04/2018)
     Impl: Ryan Rennoir V.1 (07/04/2018)
     """
+    # Init _ui
     _ui = ['Stats:', ' ', 'Asteroid:']
 
+    # Add ever asteroid in the game
     _asteroid = environment_stats['asteroid']
     for asteroid in _asteroid:
         _ui.append(asteroid)
 
+    # Pass a line
     _ui += ' '
 
+    # Stats for players
     for player in range(2):
-        _ui.append('Player' + str(player + 1) + ':')
+        _ui.append('Player' + str(player + 1) + ':')  # Player nb:
 
+        _ui.append('Ore:' + str(player_estate[player]['ore_amount']))  # Ore: ore of the player
+
+        # Add ever vessel for each player
         for vessel in vessel_stats[player]:
             _ui.append(vessel_stats[player][vessel])
 
+        # Pass a line between players
         _ui += ' '
+
     return _ui
 
 
@@ -544,7 +553,7 @@ def ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid
         y_line = []
 
         for column in range(size[0]):
-            color = 'white'     # Set the default color at white
+            color = 'white'  # Set the default color at white
             case = [line + 1, column + 1]  # case to be check (+ 1 because start in 1,1 not in 0,0)
 
             if not check_base(player_estate, case):  # check if is a base
@@ -717,8 +726,46 @@ def get_order(order, vessel_stats, player_estate, environment_stats, vessel_posi
     --------
     Spec: Ryan Rennoir V.1 (02/03/2018)
           Arnaud Schmetz V.2 (30/03/2018)
-    Implem : Arnaud Schmetz v.1 (26/03/2018)
+    Impl: Arnaud Schmetz v.1 (26/03/2018)
     """
+
+
+def attack(player, attacker, coord, vessel_stats, vessel_position, player_estate, config):
+    """
+
+    :return:
+    """
+    # Get the range from the config.
+    vessel_type = vessel_stats[player][attacker][0]
+    vessel_range = config[vessel_type][1]
+
+    center = vessel_stats[player][attacker][1]
+    vessel_dmg = config[vessel_type][4]
+
+    # Measures the Manhattan distance
+    delta_line = abs(coord[0] - center[0]) + abs(coord[1] - center[1])
+
+    # Check if out of range
+    if delta_line > vessel_range:
+        return
+
+    # Check if there is a vessel at this coordinate and made the shoot.
+    for player in range(2):
+        for vessels in vessel_position[player]:
+            for position in vessel_position[player][vessels]:
+
+                # Check when position match
+                if position == coord:
+
+                    # Check is the vessel hit it isn't itself and remove the hp
+                    if vessels != attacker:
+                        vessel_stats[player][vessels][2] -= vessel_dmg
+
+                        # Check if the vessel is dead and delete him is yes
+                        if vessel_stats[player][vessels][2] <= 0:
+                            del vessel_stats[player][vessels]
+                            del vessel_position[player][vessels]
+                            player_estate[player]['vessel'].remove(vessels)
 
 
 def game():
@@ -742,29 +789,33 @@ def game():
 
     game_config = {'general': [int(general['case per move']), int(general['nb_AI']), int(general['starting_ore'])],
 
-                   'scout': [int(scout['life']), int(scout['range']), int(scout['max ore']), scout['lock']],
+                   'scout': [int(scout['life']), int(scout['range']), int(scout['max ore']), scout['lock'],
+                             int(scout['attack']), int(scout['cost'])],
 
-                   'warship': [int(warship['life']), int(warship['range']), int(warship['max ore']), warship['lock']],
+                   'warship': [int(warship['life']), int(warship['range']), int(warship['max ore']), warship['lock'],
+                               int(warship['attack']), int(warship['cost'])],
 
                    'excavator_s': [int(excavator_s['life']), int(excavator_s['range']), int(excavator_s['max ore']),
-                                   excavator_l['lock']],
+                                   excavator_l['lock'], int(excavator_s['attack']), int(excavator_s['cost'])],
 
                    'excavator_m': [int(excavator_m['life']), int(excavator_m['range']), int(excavator_m['max ore']),
-                                   excavator_m['lock']],
+                                   excavator_m['lock'], int(excavator_m['attack']), int(excavator_m['cost'])],
 
                    'excavator_l': [int(excavator_l['life']), int(excavator_l['range']), int(excavator_l['max ore']),
-                                   excavator_l['lock']]}
+                                   excavator_l['lock'], int(excavator_l['attack']), int(excavator_l['cost'])]}
 
     vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position, vessel_start_position \
         = create_data(game_config)
 
-    create_excavator_m('jean', player_estate, 0, vessel_stats, vessel_position, vessel_start_position, game_config)
-    create_excavator_l('louis', player_estate, 1, vessel_stats, vessel_position, vessel_start_position, game_config)
+    create_warship('jean', player_estate, 0, vessel_stats, vessel_position, vessel_start_position, game_config)
+    create_warship('louis', player_estate, 1, vessel_stats, vessel_position, vessel_start_position, game_config)
 
-    final_coordinate = [{'jean': [20, 20]}, {'louis': [0, 0]}]
+    final_coordinate = [{'jean': [15, 20]}, {'louis': [15, 0]}]
 
     move('jean', 0, vessel_stats, vessel_position, final_coordinate, environment_stats, game_config)
     move('louis', 1, vessel_stats, vessel_position, final_coordinate, environment_stats, game_config)
+
+    attack(1, 'louis', [15, 9], vessel_stats, vessel_position, player_estate, game_config)
 
     ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid_position)
 
