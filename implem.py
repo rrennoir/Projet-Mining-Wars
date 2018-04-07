@@ -96,7 +96,7 @@ def create_scout(name, player_estate, player, vessel_stats, vessel_position, ves
     if config[vessel_type][2]:
         locking = 'unlock'
     else:
-        locking = 'NONE'
+        locking = None
 
     line = player_estate[player]['base'][0]
     column = player_estate[player]['base'][1]
@@ -132,7 +132,7 @@ def create_warship(name, player_estate, player, vessel_stats, vessel_position, v
     if config[vessel_type][2]:
         locking = 'unlock'
     else:
-        locking = 'NONE'
+        locking = None
 
     line = player_estate[player]['base'][0]
     column = player_estate[player]['base'][1]
@@ -171,7 +171,7 @@ def create_excavator_s(name, player_estate, player, vessel_stats, vessel_positio
     if config[vessel_type][2]:
         locking = 'unlock'
     else:
-        locking = 'NONE'
+        locking = None
 
     line = player_estate[player]['base'][0]
     column = player_estate[player]['base'][1]
@@ -210,7 +210,7 @@ def create_excavator_m(name, player_estate, player, vessel_stats, vessel_positio
     if config[vessel_type][2]:
         locking = 'unlock'
     else:
-        locking = 'NONE'
+        locking = None
 
     line = player_estate[player]['base'][0]
     column = player_estate[player]['base'][1]
@@ -249,7 +249,7 @@ def create_excavator_l(name, player_estate, player, vessel_stats, vessel_positio
     if config[vessel_type][2]:
         locking = 'unlock'
     else:
-        locking = 'NONE'
+        locking = None
 
     line = player_estate[player]['base'][0]
     column = player_estate[player]['base'][1]
@@ -675,36 +675,49 @@ def move(vessel, player, vessel_stats, vessel_position, final_coordinate, enviro
 
     board = environment_stats['board_size']
 
+    # Check if the vessel can move
+    if vessel_stats[player][vessel][4] == 'lock':
+        return
+
+    # Check if the vessel is not already on the position
     if final_coordinate[player][vessel] != vessel_stats[player][vessel][1]:
 
-        if position_line != destination_line:
-            delta_line = destination_line - position_line
-            if delta_line < 0:
-                direction = case * - 1
-            else:
-                direction = case
+            # Check if the vessel is not already on the line
+            if position_line != destination_line:
+                delta_line = destination_line - position_line
 
-            if check_border('line', vessel_position[player][vessel], board, direction):
-                for coordinate in vessel_position[player][vessel]:
-                    coordinate[0] += direction  # move the vessel in vessel_position
+                # Check if the move is negative
+                if delta_line < 0:
+                    direction = case * - 1
+                else:
+                    direction = case
 
-                vessel_stats[player][vessel][1][0] += direction  # move the vessel in vessel_stat
+                # Check if not on a border
+                if check_border('line', vessel_position[player][vessel], board, direction):
+                    for coordinate in vessel_position[player][vessel]:
+                        coordinate[0] += direction  # move the vessel in vessel_position
 
-        if position_column != destination_column:
-            # get the difference of case between the vessel and the destination
-            delta_column = destination_column - position_column
+                    vessel_stats[player][vessel][1][0] += direction  # move the vessel in vessel_stat
 
-            if delta_column < 0:
-                direction = case * - 1
-            else:
-                direction = case
+            # Check if the vessel is not already on the column
+            if position_column != destination_column:
+                # get the difference of case between the vessel and the destination
+                delta_column = destination_column - position_column
 
-            if check_border('column', vessel_position[player][vessel], board, direction):
-                for coordinate in vessel_position[player][vessel]:
-                    coordinate[1] += direction  # move the vessel in vessel_position
+                # check if the move is negative
+                if delta_column < 0:
+                    direction = case * - 1
+                else:
+                    direction = case
 
-                vessel_stats[player][vessel][1][1] += direction  # move the vessel in vessel_stat
+                # Check if not on the border
+                if check_border('column', vessel_position[player][vessel], board, direction):
+                    for coordinate in vessel_position[player][vessel]:
+                        coordinate[1] += direction  # move the vessel in vessel_position
+
+                    vessel_stats[player][vessel][1][1] += direction  # move the vessel in vessel_stat
     else:
+        # Remove the target coordinate
         final_coordinate[player].pop(vessel)
 
 
@@ -766,6 +779,36 @@ def attack(player, attacker, coord, vessel_stats, vessel_position, player_estate
                             del vessel_stats[player][vessels]
                             del vessel_position[player][vessels]
                             player_estate[player]['vessel'].remove(vessels)
+
+
+def lock_unlock(player, vessel, vessel_stats, order, player_estate, asteroid_position):
+    """
+    Lock or release the excavator
+
+    Parameters:
+    -----------
+    player:
+    vessels:
+    vessel_stats:
+
+    Version:
+    --------
+    Spec: Ryan Rennoir V.1 (07/04/2018)
+    Impl: Ryan Rennoir V.1 (07/04/2018)
+    """
+    state = vessel_stats[player][vessel][4]
+
+    if state is None or state == order:
+        return
+
+    else:
+        if not (player_estate[player]['base'] == vessel_stats[player][vessel][1]):
+
+            for asteroid in asteroid_position:
+                if not(asteroid == vessel_stats[player][vessel][1]):
+                    return
+
+        vessel_stats[player][vessel][4] = order
 
 
 def ai(player, vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position):
