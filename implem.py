@@ -484,6 +484,13 @@ def vessel_character(vessel_position, vessel_stats, case):
     return colored(symbol, color)
 
 
+def vessel_stats(vessel_stats, player_estate):
+    """
+
+    :return:
+    """
+
+
 def ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid_position):
     """
     Calculate what to display in each tile of the board and display it with the information section
@@ -638,6 +645,28 @@ def move(vessel, player, vessel_stats, vessel_position, final_coordinate, enviro
         final_coordinate[player].pop(vessel)
 
 
+def get_order(order, vessel_stats, player_estate, environment_stats, vessel_position, final_coordinate):
+    """
+    Read the instructions give by the player and execute the function
+
+    Parameters:
+    -----------
+    order :Instruction of the player (list)
+    vessel_stats : contains the informations about the vessels of the players (dictionnary)
+    board : repository list of tuples used to calculate the content of each tile more easily (list)
+    player-estate : contains the ore_amount, the vessels and the base of each player (dictionnary)
+    environment_stats : countains the board size and the ore of each asteroid (dictionnary)
+    vessel_position : countains the position of each entire vessel into a list (dictionnary)
+    final_coordinate :
+
+    Version:
+    --------
+    Spec: Ryan Rennoir V.1 (02/03/2018)
+          Arnaud Schmetz V.2 (30/03/2018)
+    Implem : Arnaud Schmetz v.1 (26/03/2018)
+    """
+
+
 def game():
     """
     The game itself with the loop and all function call
@@ -671,8 +700,6 @@ def game():
 
                    'excavator_l': [int(excavator_l['life']), int(excavator_l['range']), int(excavator_l['max ore']),
                                    excavator_l['lock']]}
-
-    print(game_config)
 
     vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position, vessel_start_position \
         = create_data(game_config)
