@@ -56,12 +56,13 @@ def create_data(config):
     environment_stats = {'board_size': (int(game_config[1][0:2]), int(game_config[1][3:5]))}
     asteroid_position = []
 
+    _asteroid = []
     for i in range(len(game_config) - 6):
-        asteroid_name = 'asteroid' + str(i + 1)
         asteroid_info = game_config[i + 6].split()
-        environment_stats.update(
-            {asteroid_name: [[int(asteroid_info[0]), int(asteroid_info[1])], int(asteroid_info[2]), int(asteroid_info[3])]})
+        _asteroid += [[[int(asteroid_info[0]), int(asteroid_info[1])], int(asteroid_info[2]), int(asteroid_info[3])]]
         asteroid_position.append([int(asteroid_info[0]), int(asteroid_info[1])])
+
+    environment_stats.update({'asteroid': _asteroid})
 
     # create all starting position for a new vessel
     vessel_start_position = create_vessel_starting_position(player_estate)
@@ -304,7 +305,7 @@ def create_vessel_starting_position(player_estate):
             for line_nb in range(5):
                 line = line_ref + line_nb
 
-                if not((line_nb == 0 or line_nb == 4) and (column_nb == 0 or column_nb == 4)):
+                if not ((line_nb == 0 or line_nb == 4) and (column_nb == 0 or column_nb == 4)):
                     position.append([line, column])
 
         create_vessel_position[player].update({'warship': position})
@@ -484,11 +485,39 @@ def vessel_character(vessel_position, vessel_stats, case):
     return colored(symbol, color)
 
 
-def vessel_stats(vessel_stats, player_estate):
+def game_stats_ui(vessel_stats, player_estate, environment_stats):
     """
+    Parameters:
+    -----------
+    vessel_stats:
+    player_estate:
+    environment_stats:
 
-    :return:
+    Return:
+    -------
+    result:
+
+    Version:
+    --------
+    spec: Ryan Rennoir V.1 (07/04/2018)
+    Impl: Ryan Rennoir V.1 (07/04/2018)
     """
+    _ui = ['Stats:', ' ', 'Asteroid:']
+
+    _asteroid = environment_stats['asteroid']
+    for asteroid in _asteroid:
+        _ui.append(asteroid)
+
+    _ui += ' '
+
+    for player in range(2):
+        _ui.append('Player' + str(player + 1) + ':')
+
+        for vessel in vessel_stats[player]:
+            _ui.append(vessel_stats[player][vessel])
+
+        _ui += ' '
+    return _ui
 
 
 def ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid_position):
@@ -510,12 +539,12 @@ def ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid
     Impl: Ryan Rennoir V.1 (25/03/2018)
     """
     size = environment_stats['board_size']  # get the board size
-    grid = []
+    grid = []  # Init the grid
     for line in range(size[1]):
         y_line = []
 
         for column in range(size[0]):
-            color = 'white'
+            color = 'white'     # Set the default color at white
             case = [line + 1, column + 1]  # case to be check (+ 1 because start in 1,1 not in 0,0)
 
             if not check_base(player_estate, case):  # check if is a base
@@ -532,25 +561,51 @@ def ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid
 
             else:
 
+                # Check ii it's the player 1 base and put the right color
                 if case == player_estate[0]['base']:
-                    color = 'green'
+                    color = 'green'  # Player 1 base
+
                 else:
-                    color = 'red'
+                    color = 'red'  # Player 2 base
 
                 y_line += colored('●', color)  # it's a base
 
         grid.append(y_line)  # add character to the line
 
+    # Get the stats to print
+    stats = game_stats_ui(vessel_stats, player_estate, environment_stats)
+    # Init the index for the stats to print on the right
+    line_index = 0
+
     for line in grid:
+
+        # Init the line to print
         final_line = ''
 
         for characters in line:
             final_line += characters
 
-        print(final_line)
+        # Add statistic
+        # Try if the index is not out of range
+        try:
+            stats_to_print = stats[line_index]
+
+        # Index out of range print nothing
+        except IndexError:
+            stats_to_print = ''
+
+        # Print line per line the board with stats on the right
+        print(final_line + ' ', stats_to_print)
+
+        # Add 1 to the index
+        line_index += 1
+
+    # Print the legends at the end
+    print('Color: Green Player 1, Red Player 2\n'
+          'Characters:  □ Nothing, ● Base, ▣ Asteroid, ◎ Excavator, ◇ Scout, △ Warship')
 
 
-def check_border(type, vessel_position, board, direction):
+def check_border(type_axis, vessel_position, board, direction):
     """
     Check if the vessel stay in the board
 
@@ -571,10 +626,9 @@ def check_border(type, vessel_position, board, direction):
     Impl: Ryan Rennoir V.1 (04/04/2018)
     """
 
-    if type == 'line':
+    if type_axis == 'line':
         for position in vessel_position:
             if position[0] + direction > board[0] or position[0] + direction < 0:
-
                 return False
     else:
         for position in vessel_position:

@@ -9,8 +9,7 @@ vessel_position = [{'vessel 1': [['x', 'y'], ['x', 'y']],
                     'vessel 4': [['x', 'y'], ['x', 'y']]}]
 
 environment_stats = {'board_size': ('x', 'y'),
-                     'asteroid 1': [('x', 'y'), 'ore', 'ore/round'],
-                     'asteroid 2': [('x', 'y'), 'ore', 'ore/round']}
+                     'asteroid': [[('x', 'y'), 'ore', 'ore/round'], [('x', 'y'), 'ore', 'ore/round']]}
 
 asteroid_position = [['x', 'y'], ['x', 'y']]
 
