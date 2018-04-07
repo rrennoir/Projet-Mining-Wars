@@ -1,4 +1,4 @@
-def IA (player, vessel, board, players_estate, environment_stats, vessel_position):
+def ai (player, vessel, board, players_estate, environment_stats, vessel_position):
     """ calculate what the IA will do.
 
     Parameters
@@ -22,7 +22,7 @@ def IA (player, vessel, board, players_estate, environment_stats, vessel_positio
     orders = ''
     
     # make the purchases 
-    for vessel in ((9, 'warship'), (4, 'excavator-L'), (3, 'scout'), (2, 'excavtor-M'), (1, 'excavator-S')) :
+    for vessel in ((warship, 'warship'), (excavator_l, 'excavator-L'), (scout, 'scout'), (excavator_m, 'excavtor-M'), (excavator_s, 'excavator-S')) :
         if player_estate [player - 1] [ore_amount] >= vessel (0) and orders == '' :
             name = 'random_vessel' + randint(0, 200)
             while name in vessel_stats [player - 1] :
@@ -48,4 +48,8 @@ def IA (player, vessel, board, players_estate, environment_stats, vessel_positio
                 new_coordinates = [vessel_stats [player - 1] ['center coordinate'] [0] + randint(-1, 1), vessel_stats [player - 1] ['center coordinate'] [1] + randint(-1, 1) ]
                 orders += vessel + ':@' + new_coordinates [0] + '-' + new_coordinates [1]          
                 
-                    
+        # make the actions for the offensive vessels
+        else :
+            if choice == 1 :
+                orders += vessel + ':@' + new_coordinates [0] + '-' + new_coordinates [1]    
+            else :                    
