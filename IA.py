@@ -22,7 +22,7 @@ def ai (player, vessel, board, players_estate, environment_stats, vessel_positio
     orders = ''
     
     # make the purchases 
-    for vessel in ((warship, 'warship'), (excavator_l, 'excavator-L'), (scout, 'scout'), (excavator_m, 'excavtor-M'), (excavator_s, 'excavator-S')) :
+     for vessel in ((config ['warship'] [5], 'warship'), (config ['excavator_l'] [5], 'excavator-L'), (config ['scout'] [5], 'scout'), (config ['excavator_m'] [5], 'excavtor-M'), (config ['excavator_s'] [5], 'excavator-S')) :
         if player_estate [player - 1] [ore_amount] >= vessel (0) and orders == '' :
             name = 'random_vessel' + randint(0, 200)
             while name in vessel_stats [player - 1] :
@@ -52,4 +52,10 @@ def ai (player, vessel, board, players_estate, environment_stats, vessel_positio
         else :
             if choice == 1 :
                 orders += vessel + ':@' + new_coordinates [0] + '-' + new_coordinates [1]    
-            else :                    
+            else : 
+                scope = config [vessel_stats [player - 1] ['type']] [2]
+                tile_to_shoot = [vessel_stats [player - 1] ['center coordinate'] [0] + randint(-scope, scope) , vessel_stats [player - 1] ['center coordinate'] [1] + randint(-scope, scope)]
+                orders += vessel + ':*' + tile_to_shoot [0] + '-' + tile_to_shoot [1]
+    
+    Return orders
+                
