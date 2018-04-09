@@ -31,7 +31,7 @@ def get_order(order, vessel_stats, board, player_estate, environment_stats, vess
             for buy_type in buy_types :
                 if str.find(single_order, buy_type (0)) != -1 :
                     buy_type (1) (single_order [0 : str.find(single_order, ':')], player_estate, splited_orders.index(player_orders), vessel_stats, vessel_position, 
-                    [player-estate[int(splited_orders.index(player_orders))]['base'] [1], [player-estate[int(splited_orders.index(player_orders))]['base'] [2]]])
+                    [player_estate[int(splited_orders.index(player_orders))]['base'] [1], [player_estate[int(splited_orders.index(player_orders))]['base'] [2]]])
     
     # scroll through the orders of each player and execute each (un)lock order encountered (second turn phase)
     for player_orders in splited_orders :
