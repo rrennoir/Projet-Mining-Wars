@@ -1,4 +1,4 @@
-def ai (player, vessel, players_estate, environment_stats):
+def ai (player, vessel, player_estate, environment_stats):
     """ calculate what the IA will do.
 
     Parameters
@@ -21,7 +21,7 @@ def ai (player, vessel, players_estate, environment_stats):
     
     # make the purchases 
      for vessel in ((config ['warship'] [5], 'warship'), (config ['excavator_l'] [5], 'excavator-L'), (config ['scout'] [5], 'scout'), (config ['excavator_m'] [5], 'excavtor-M'), (config ['excavator_s'] [5], 'excavator-S')) :
-        if player_estate [player - 1] [ore_amount] >= vessel (0) and orders == '' :
+        if player_estate [player - 1] ['ore_amount'] >= vessel (0) and orders == '' :
             name = 'random_vessel' + randint(0, 200)
             while name in vessel_stats [player - 1] :
                 name = 'vessel_' + randint(0, 200) + '_player_' + player + ' ' 
