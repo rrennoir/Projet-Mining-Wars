@@ -1,14 +1,12 @@
-def ai (player, vessel, board, players_estate, environment_stats, vessel_position):
+def ai (player, vessel, players_estate, environment_stats):
     """ calculate what the IA will do.
 
     Parameters
     ----------
     player : tell the IA, which player she is (1 or 2) (int) 
     vessel_stats : contains the information about the vessels of the players (lis)
-    board : repository list of tuples used to calculate the content of each tile more easily (list)
     players_estate : contains the ore_amount, the vessels and the base of each player (list)
     environment_stats : countains the board size and the ore of each asteroid (dictionnary)
-    vessel_position : countains the position of each entire vessel into a list (list)
 
     Return
     ------
