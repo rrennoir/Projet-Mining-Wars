@@ -1,6 +1,7 @@
 from termcolor import colored
 import os
 import configparser
+from random import randint
 
 
 def create_data(config):
@@ -721,28 +722,6 @@ def move(vessel, player, vessel_stats, vessel_position, final_coordinate, enviro
         final_coordinate[player].pop(vessel)
 
 
-def get_order(order, vessel_stats, player_estate, environment_stats, vessel_position, final_coordinate):
-    """
-    Read the instructions give by the player and execute the function
-
-    Parameters:
-    -----------
-    order :Instruction of the player (list)
-    vessel_stats : contains the informations about the vessels of the players (dictionnary)
-    board : repository list of tuples used to calculate the content of each tile more easily (list)
-    player-estate : contains the ore_amount, the vessels and the base of each player (dictionnary)
-    environment_stats : countains the board size and the ore of each asteroid (dictionnary)
-    vessel_position : countains the position of each entire vessel into a list (dictionnary)
-    final_coordinate :
-
-    Version:
-    --------
-    Spec: Ryan Rennoir V.1 (02/03/2018)
-          Arnaud Schmetz V.2 (30/03/2018)
-    Impl: Arnaud Schmetz v.1 (26/03/2018)
-    """
-
-
 def attack(player, attacker, coord, vessel_stats, vessel_position, player_estate, config):
     """
 
@@ -781,7 +760,126 @@ def attack(player, attacker, coord, vessel_stats, vessel_position, player_estate
                             player_estate[player]['vessel'].remove(vessels)
 
 
-def lock_unlock(player, vessel, vessel_stats, order, player_estate, asteroid_position):
+def get_ore(vessel_stats, player_estate, environment_stats):
+    """ take ore out of an asteroid and give him to the vessel or tranfer the ore from a vessel to the base.
+
+    Parameters:
+    ----------
+    vessel_stats : contains the information about the vessels of the players (list)
+    player_estate : contains the ore_amount, the vessels and the base of each player (list)
+    environment_stats : contains the board size and the ore of each asteroid (dictionnary)
+
+    Version:
+    --------
+    specification : Arnaud Schmetz (v.1 02/03/18)
+    """
+
+    # Make a dictionary to sort the vessels locked by asteroid, making easier any fair redistribution if an asteroid
+    # don't have enough ore
+    vessels_by_asteroid = {}
+
+    for asteroid in environment_stats['asteroid']:
+        vessels_by_asteroid.update({asteroid[0]: []})
+
+    # Transfer the ore between the vessels and the base and sort the vessels locked, by asteroid
+    for player in range(2):
+        for vessel in vessel_stats[player]:
+
+            if vessel[4] == 'lock':
+                if vessel['center coordinate'] == player_estate[int(vessel_stats.index(player))]['base']:
+                    player_estate[int(vessel_stats.index(player))]['ore_amount'] = \
+                        vessel_stats[int(vessel_stats.index(player))][vessel]['ore']
+
+                    vessel_stats[int(vessel_stats.index(player))][vessel]['ore'] = 0
+
+                else:
+                    vessels_by_asteroid[vessel][0].append(vessel)
+
+    # Makes the transfer from the asteroids to the vessels
+    for asteroid in vessels_by_asteroid:
+        if len(asteroid) == 1:
+            environment_stats['asteroid'] -= vessel_stats[int(vessel_stats.index(player))][vessel]['ore']
+            vessel_stats[int(vessel_stats.index(player))][vessel]['ore'] = 0
+
+
+def get_order(order, vessel_stats, player_estate, environment_stats, vessel_position, final_coordinate, config):
+    """
+    Read the instructions give by the player and execute the function
+    Parameters:
+    -----------
+    order :Instruction of the player (list)
+    vessel_stats : contains the informations about the vessels of the players (dictionnary)
+    player-estate : contains the ore_amount, the vessels and the base of each player (dictionnary)
+    environment_stats : countains the board size and the ore of each asteroid (dictionnary)
+    vessel_position : countains the position of each entire vessel into a list (dictionnary)
+    final_coordinate :
+    Version:
+    --------
+    Spec: Ryan Rennoir V.1 (02/03/2018)
+          Arnaud Schmetz V.2 (30/03/2018)
+    Implem : Arnaud Schmetz v.1 (26/03/2018)
+    """
+
+    split_orders = []
+
+    for player_orders in order:
+        split_orders.append(player_orders.split())
+
+    # scroll through the orders of each player and execute each buy order encountered (first turn phase)
+    buy_types = {'scout': ('scout', create_scout), 'warship': ('warship', create_warship),
+                 'excavator_M': ('excavator_M', create_excavator_m),
+                 'excavator_S': ('excavator_S', create_excavator_s), 'excavator_L': ('excavator_L', create_excavator_l)}
+
+    player = 0
+    for player_orders in split_orders:
+        for single_order in player_orders:
+            for buy_type in buy_types:
+                if single_order.find(buy_type[0]) != -1:
+
+                    buy_types[buy_type][1](single_order[0: single_order.find(':')], player_estate, player,
+                                           vessel_stats, vessel_position,
+                                           [player_estate[int(split_orders.index(player_orders))]['base'][1],
+                                            [player_estate[int(split_orders.index(player_orders))]['base'][2]]])
+
+        player += 1
+
+    # scroll through the orders of each player and execute each (un)lock order encountered (second turn phase)
+    for player_orders in split_orders:
+        for single_order in player_orders:
+            for order_type in (('release', release), ('lock', lock)):
+                if single_order.find(order_type[0]) != -1:
+                    order_type[1](single_order[0: single_order.find(':')], vessel_stats, environment_stats,
+                                  player_estate)
+
+    # scroll through the orders of each player and execute each move order encountered (third turn phase - moves)
+    for player_orders in split_orders:
+        for single_order in player_orders:
+            if single_order[-1].isdigit():
+                if single_order.find('*') == -1:
+                    if single_order.find('@') != -1:
+                        row = single_order[single_order.find('@') + 1:single_order.find(':')]
+                    else:
+                        row = single_order[single_order.find(':') + 1:]
+                    final_coordinate[split_orders.index(player_orders)].update(
+                        {single_order[0: single_order.find(':')]: [single_order[single_order.find('-'):], row]})
+                    move(single_order[0: single_order.find(':')], split_orders.index(player_orders), vessel_stats,
+                         vessel_position, final_coordinate, environment_stats, config)
+
+    # scroll through the orders of each player and execute each attack order encountered (third turn phase - attacks)
+    for player_orders in split_orders:
+        for single_order in player_orders:
+            if single_order[-1].isdigit():
+                if single_order.find('*') != -1:
+                    attack(single_order[0: single_order.find(':')],
+                           [single_order[single_order.find('-') + 1:],
+                            single_order[single_order.find('*') + 1:single_order.find('-')]], vessel_position,
+                           vessel_stats, player_estate, environment_stats, config)
+
+                    # call the function operating all the operations required with the ore (last turn phase)
+    get_ore(vessel_stats, player_estate, environment_stats)
+
+
+def lock(player, vessel, vessel_stats, order, player_estate, asteroid_position):
     """
     Lock or release the excavator
 
@@ -811,17 +909,113 @@ def lock_unlock(player, vessel, vessel_stats, order, player_estate, asteroid_pos
         vessel_stats[player][vessel][4] = order
 
 
-def ai(player, vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position):
+def release(player, vessel, vessel_stats, order, player_estate, asteroid_position):
     """
+    Release the excavator
+
+    Parameters:
+    -----------
+    player:
+    vessels:
+    vessel_stats:
+
+    Version:
+    --------
+    Spec: Ryan Rennoir V.1 (07/04/2018)
+    Impl: Ryan Rennoir V.1 (07/04/2018)
+    """
+    state = vessel_stats[player][vessel][4]
+
+    if state is None or state == order:
+        return
+
+    else:
+        if not (player_estate[player]['base'] == vessel_stats[player][vessel][1]):
+
+            for asteroid in asteroid_position:
+                if not(asteroid == vessel_stats[player][vessel][1]):
+                    return
+
+        vessel_stats[player][vessel][4] = order
+
+
+def ai(player, vessel_stats, player_estate, environment_stats, config):
+    """
+    calculate what the IA will do.
+
+    Parameters:
+    -----------
+    player : tell the IA, which player she is (0 or 1) (int)
+    vessel_stat : contains the information about the vessels of the players (list)
+    players_estate : contains the ore_amount, the vessels and the base of each player (list)
+    environment_stats : contain the board size and the ore of each asteroid (dictionary)
+    vessel_position : contain the position of each entire vessel into a list (list)
+
     Return:
     -------
-    command:
+    order: the orders of the IA (string)
 
     Version:
     --------
     spec: Ryan Rennoir V.1 (07/04/2018)
     impl:
     """
+    orders = ''
+
+    vessel_type = ('scout', 'warship', 'excavator_s', 'excavator_m', 'excavator_l')
+
+    # make the purchases
+    for vessel in vessel_type:
+        cost = config[vessel][5]
+
+        if player_estate[player]['ore_amount'] >= cost and orders == '':
+            name = 'vessel_'
+
+            while name in vessel_stats[player]:
+                name += str(randint(0, 200))
+            orders += name + ' :' + vessel
+
+    # make the actions for the vessels
+    for vessel in vessel_stats[player]:
+        choice = randint(0, 1)
+
+        # make the actions for the excavators
+
+        if vessel[0] in ('excavator_m', 'excavator_s', 'excavator_l'):
+            if choice == 1:
+                if len(orders) != 0:
+                    orders += ' '
+
+                if vessel[4] == 'lock':
+                    orders += vessel + ':release'
+
+                else:
+                    for asteroid in environment_stats['asteroid']:
+                        if vessel[1][0] == asteroid[0][0] and vessel[1][1] == asteroid[0][1]:
+                            orders += vessel + ':lock'
+
+                    if vessel[1] == player_estate['base']:
+                        orders += vessel + ':lock '
+
+            elif vessel[4] == 'release':
+                new_coordinates = [vessel[1][0] + randint(-1, 1),
+                                   vessel[1][1] + randint(-1, 1)]
+                orders += vessel + ':@' + str(new_coordinates[0]) + '-' + str(new_coordinates[1])
+
+        # make the actions for the offensive vessels
+        else:
+            if choice == 1:
+                if len(orders) != 0:
+                    orders += ' '
+
+                orders += vessel + ':@' + str(new_coordinates[0]) + '-' + str(new_coordinates[1])
+
+            else:
+                scope = config[vessel[0]][2]
+                tile_to_shoot = [vessel[1][0] + randint(-scope, scope), vessel[1][1] + randint(-scope, scope)]
+                orders += vessel + ':*' + str(tile_to_shoot[0]) + '-' + str(tile_to_shoot[1])
+
+    return orders
 
 
 def game():
@@ -865,12 +1059,12 @@ def game():
 
     nb_ai = game_config['general'][2]
     if nb_ai == 2:
-        command_p1 = ai(0, vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position)
-        command_p2 = ai(1, vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position)
+        command_p1 = ai(0, vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position, game_config)
+        command_p2 = ai(1, vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position, game_config)
 
     elif nb_ai == 1:
         command_p1 = input()
-        command_p2 = ai(1, vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position)
+        command_p2 = ai(1, vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position, game_config)
 
     else:
         command_p1 = input()

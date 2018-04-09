@@ -1,22 +1,23 @@
-def get_ore(vessel_stats, players_estate, environment_stats):
+def get_ore(vessel_stats, player_estate, environment_stats):
     """ take ore out of an asteroid and give him to the vessel or tranfer the ore from a vessel to the base.
 
-    Parameters
+    Parameters:
     ----------
     vessel_stats : contains the information about the vessels of the players (list)
     players-estate : contains the ore_amount, the vessels and the base of each player (list)
     environment_stats : countains the board size and the ore of each asteroid (dictionnary)
 
-    Version
+    Version:
     -------
-    specification : Arnaud Schmetz (v.1 02/03/18) """
+    specification : Arnaud Schmetz (v.1 02/03/18)
+    """
     
-    #make a dictionnary to sort the vessels locked by asteroid, making easier any fair redistribution if an asteroid don't have enough ore
+    # Make a dictionary to sort the vessels locked by asteroid, making easier any fair redistribution if an asteroid don't have enough ore
     vessels_by_asteroid = {}
-    for asteroid in environment_stat [asteroid] :
+    for asteroid in environment_stats ['asteroid'] :
         vessels_by_asteroid.update({asteroid [0] : []})
     
-    #transfer the ore between the vessels and the base and sort the vessels locked, by asteroid
+    # Transfer the ore between the vessels and the base and sort the vessels locked, by asteroid
     for player in vessel_stats :
         for vessel in player :
             if player [vessel] ['lock'] == 'lock' :
@@ -26,7 +27,7 @@ def get_ore(vessel_stats, players_estate, environment_stats):
                 else :
                     vessels_by_asteroid [vessel] ['center coordinate'].append(vessel)
     
-    #makes the fransfer from the asteroids to the vessels
+    # Makes the transfer from the asteroids to the vessels
     for asteroid in vessels_by_asteroid :
         if len(asteroid) == 1 :
             environment_stats [] -= vessel_stats [int(vessel_stats.index(player))] [vessel] ['ore']
