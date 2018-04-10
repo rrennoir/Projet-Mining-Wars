@@ -1,4 +1,4 @@
-def get_ore(vessel_stats, player_estate, environment_stats):
+def get_ore(vessel_stats, player_estate, environment_stats, config):
     """ take ore out of an asteroid and give him to the vessel or tranfer the ore from a vessel to the base.
 
     Parameters:
@@ -6,6 +6,7 @@ def get_ore(vessel_stats, player_estate, environment_stats):
     vessel_stats : contains the information about the vessels of the players (list)
     players-estate : contains the ore_amount, the vessels and the base of each player (list)
     environment_stats : countains the board size and the ore of each asteroid (dictionnary)
+    config :
 
     Version:
     -------
