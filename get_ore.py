@@ -36,7 +36,7 @@ def get_ore(vessel_stats, player_estate, environment_stats, config):
                     coordinates = (player [vessel] [1] [0], player [vessel] [1] [1])
                     
                     # if free space on the board >= ore obtainable per round : ore_to_get = ore obtainable per round, else ore_to_get = free space on the board
-                    if config [vessel_stats [0]] [3] - player [vessel] [3] >= environment_stats ['asteroid'] [vessels_by_asteroid [coordinates] [1]] [2] :
+                    if config [vessel_stats [player_index] [vessel] [0]] [3] - player [vessel] [3] >= environment_stats ['asteroid'] [vessels_by_asteroid [coordinates] [1]] [2] :
                         ore_to_get = environment_stats ['asteroid'] [vessels_by_asteroid [coordinates] [1]] [2]
                     else :
                         ore_to_get = config [vessel_stats [0]] [3] - player [vessel] [3]
