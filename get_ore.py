@@ -13,7 +13,7 @@ def get_ore(vessel_stats, player_estate, environment_stats, config):
     specification : Arnaud Schmetz (v.1 02/03/18)
     """
     
-       # Make a dictionnary to sort the vessels locked by asteroid, making easier any fair redistribution if an asteroid don't have enough ore
+    # Make a dictionnary to sort the vessels locked by asteroid, making easier any fair redistribution if an asteroid don't have enough ore
     vessels_by_asteroid = {}
     for asteroid in environment_stats ['asteroid'] :
         # {'asteroid_coordinates' : [[vessels], index_of_the_asteroid_in_environment_stats, total_ore_needed_for_the_vessels, amount_of_vessels_needing_ore] , .... } 
@@ -25,12 +25,11 @@ def get_ore(vessel_stats, player_estate, environment_stats, config):
         player_index = int(vessel_stats.index(player))
         for vessel in player :
             if player [vessel] [4] == 'lock' :
-                
                 # ore from the vessels to the base
                 if player [vessel] [1] == player_estate [int(vessel_stats.index(player))] ['base'] :
                     player_estate [player_index] ['ore_amount'] += player [vessel] [3]
                     vessel_stats [player_index] [vessel] [3] = 0
-                
+            
                 # sort the vessels locked, by asteroid, after computing how many ore each vessel should get, regardless of the ore remaining on asteroids
                 else :
                     coordinates = (player [vessel] [1] [0], player [vessel] [1] [1])
@@ -39,19 +38,19 @@ def get_ore(vessel_stats, player_estate, environment_stats, config):
                     if config [vessel_stats [player_index] [vessel] [0]] [3] - player [vessel] [3] >= environment_stats ['asteroid'] [vessels_by_asteroid [coordinates] [1]] [2] :
                         ore_to_get = environment_stats ['asteroid'] [vessels_by_asteroid [coordinates] [1]] [2]
                     else :
-                        ore_to_get = config [vessel_stats [0]] [3] - player [vessel] [3]
+                        ore_to_get = config [vessel_stats [player_index] [vessel] [0]] [3] - player [vessel] [3]
                         
                     vessels_by_asteroid [coordinates] .append([vessel, ore_to_get, player_index])
                     vessels_by_asteroid [coordinates] [2] += ore_to_get
                     vessels_by_asteroid [coordinates] [3] += 1
-                    
+                   
     # Makes the transfer from the asteroids to the vessels
     for asteroid in vessels_by_asteroid :
         
         # if asteroid has enough ore : make the transfers normally
         if vessels_by_asteroid [asteroid] [2] <= environment_stats ['asteroid'] [vessels_by_asteroid [asteroid] [1]] [1] :
             environment_stats ['asteroid'] [vessels_by_asteroid [asteroid] [1]] [1] -= vessels_by_asteroid [asteroid] [2]
-            for vessel in vessels_by_asteroid [asteroid] : 
+            for vessel in vessels_by_asteroid [asteroid] [0] :
                 vessel_stats [vessel [2]] [vessel [0]] [3] += vessel [1]
         
         # if asteroid doesn't have enough ore, share it between the vessels 
@@ -73,4 +72,4 @@ def get_ore(vessel_stats, player_estate, environment_stats, config):
                         environment_stats ['asteroid'] [vessels_by_asteroid [asteroid] [1]] [1] -= vessel [1]
                         vessel_stats [vessel [2]] [vessel [0]] [3] += vessel [1]
                         vessels_by_asteroid [asteroid] [vessels_by_asteroid [asteroid].index(vessel)] [1] -= vessel [1]
-                        vessels_by_asteroid [asteroid] [3] -= 1
+                        vessels_by_asteroid [asteroid] [3] -= 1       
