@@ -1304,7 +1304,7 @@ def game():
                   final_coordinate, vessel_start_position, asteroid_position, base_position, config)
 
         # TODO debug get_ore
-        # get_ore(vessel_stats, player_estate, environment_stats, game_config)
+        get_ore(vessel_stats, player_estate, environment_stats, config)
 
         ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid_position, base_position)
 
