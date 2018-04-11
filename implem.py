@@ -133,7 +133,7 @@ def create_scout(name, player_estate, player, vessel_stats, vessel_position, ves
     # TODO complete the spec
     vessel_type = 'scout'
 
-    price = config[vessel_type][4]
+    price = config[vessel_type][5]
     if not check_ore_account(player, player_estate, price):
         return
 
@@ -175,7 +175,7 @@ def create_warship(name, player_estate, player, vessel_stats, vessel_position, v
     # TODO complete the spec
     vessel_type = 'warship'
 
-    price = config[vessel_type][4]
+    price = config[vessel_type][5]
     if not check_ore_account(player, player_estate, price):
         return
 
@@ -217,9 +217,9 @@ def create_excavator_s(name, player_estate, player, vessel_stats, vessel_positio
     """
     # TODO complete the spec
     # config
-    vessel_type = 'excavator_s'
+    vessel_type = 'excavator-S'
 
-    price = config[vessel_type][4]
+    price = config[vessel_type][5]
     if not check_ore_account(player, player_estate, price):
         return
 
@@ -261,9 +261,9 @@ def create_excavator_m(name, player_estate, player, vessel_stats, vessel_positio
     """
     # TODO complete the spec
     # config
-    vessel_type = 'excavator_m'
+    vessel_type = 'excavator-M'
 
-    price = config[vessel_type][4]
+    price = config[vessel_type][5]
     if not check_ore_account(player, player_estate, price):
         return
 
@@ -305,9 +305,9 @@ def create_excavator_l(name, player_estate, player, vessel_stats, vessel_positio
     """
     # TODO complete the spec
     # config
-    vessel_type = 'excavator_l'
+    vessel_type = 'excavator-L'
 
-    price = config[vessel_type][4]
+    price = config[vessel_type][5]
     if not check_ore_account(player, player_estate, price):
         return
 
@@ -378,7 +378,7 @@ def create_vessel_starting_position(player_estate):
         create_vessel_position[player].update({'warship': position})
 
         # Excavator S
-        create_vessel_position[player].update({'excavator_s': base})  # the vessel position is the base, nothing to do
+        create_vessel_position[player].update({'excavator-S': [base]})  # the vessel position is the base, nothing to do
 
         # Excavator M
         position = []
@@ -394,7 +394,7 @@ def create_vessel_starting_position(player_estate):
                         (column_nb == 0 or column_nb == 2)):  # take only the line and column crossing by the base
                     position.append([line, column])
 
-        create_vessel_position[player].update({'excavator_m': position})
+        create_vessel_position[player].update({'excavator-M': position})
 
         # Excavator L
         position = []
@@ -409,7 +409,7 @@ def create_vessel_starting_position(player_estate):
                 if not ((line_nb != 2) and (column_nb != 2)):  # take only the line and column crossing the middle
                     position.append([line, column])
 
-        create_vessel_position[player].update({'excavator_l': position})
+        create_vessel_position[player].update({'excavator-L': position})
 
     return create_vessel_position
 
@@ -575,7 +575,7 @@ def game_stats_ui(vessel_stats, player_estate, environment_stats):
     spec: Ryan Rennoir V.1 (07/04/2018)
     Impl: Ryan Rennoir V.1 (07/04/2018)
     """
-    # TODO print the name of the vessel on the stats windows and make it prettier and do the spec^^
+    # TODO print the name of the vessel on the stats windows and make it prettier and do the spec
     # Init _ui
     _ui = ['Stats:', ' ', 'Asteroid:']
 
@@ -589,9 +589,11 @@ def game_stats_ui(vessel_stats, player_estate, environment_stats):
 
     # Stats for players
     for player in range(2):
-        _ui.append('Player' + str(player + 1) + ':')  # Player nb:
+        _ui.append('Player ' + str(player + 1) + ' :')  # Player nb:
 
-        _ui.append('Ore:' + str(player_estate[player]['ore_amount']))  # Ore: ore of the player
+        _ui.append('Base: ' + str(player_estate[player]['base_hp']))
+
+        _ui.append('Ore: ' + str(player_estate[player]['ore_amount']))  # Ore: ore of the player
 
         # Add ever vessel for each player
         for vessel in vessel_stats[player]:
@@ -735,18 +737,16 @@ def check_border(type_axis, vessel_position, board, direction):
     return True
 
 
-def move(vessel, player, vessel_stats, vessel_position, final_coordinate, environment_stats, config):
+def move(vessel_stats, vessel_position, final_coordinate, environment_stats, config):
     """
     Move the vessel case per case in the right direction
 
     Parameters:
     -----------
     config:
-    vessel: Name of the vessel (str)
     vessel_stats: contains the information about the vessels of the players (dic)
     vessel_position: contains the position of each entire vessel into a list (dic)
     final_coordinate: contains the final position of the vessel when a received an order (list)
-    player: number of the player O or 1 (int)
 
     Version:
     --------
@@ -756,61 +756,95 @@ def move(vessel, player, vessel_stats, vessel_position, final_coordinate, enviro
     # TODO complete the spec
     case = config['general'][0]
 
-    position_line = vessel_stats[player][vessel][1][0]
-    position_column = vessel_stats[player][vessel][1][1]
-
-    destination_line = final_coordinate[player][vessel][0]
-    destination_column = final_coordinate[player][vessel][1]
-
-    board = environment_stats['board_size']
-
-    # Check if the vessel can move
-    if vessel_stats[player][vessel][4] == 'lock':
+    if final_coordinate == [{}, {}]:
         return
 
-    # Check if the vessel is not already on the position
-    if final_coordinate[player][vessel] != vessel_stats[player][vessel][1]:
+    for player in range(2):
+        for vessel in final_coordinate[player]:
+            position_line = vessel_stats[player][vessel][1][0]
+            position_column = vessel_stats[player][vessel][1][1]
 
-        # Check if the vessel is not already on the line
-        if position_line != destination_line:
-            delta_line = destination_line - position_line
+            destination_line = final_coordinate[player][vessel][0]
+            destination_column = final_coordinate[player][vessel][1]
 
-            # Check if the move is negative
-            if delta_line < 0:
-                direction = case * - 1
+            board = environment_stats['board_size']
+
+            # Check if the vessel can move
+            if vessel_stats[player][vessel][4] == 'lock':
+                return
+
+            # Check if the vessel is not already on the position
+            if final_coordinate[player][vessel] != vessel_stats[player][vessel][1]:
+
+                # Check if the vessel is not already on the line
+                if position_line != destination_line:
+                    delta_line = destination_line - position_line
+
+                    # Check if the move is negative
+                    if delta_line < 0:
+                        direction = case * - 1
+                    else:
+                        direction = case
+
+                    # Check if not on a border
+                    if check_border('line', vessel_position[player][vessel], board, direction):
+                        for coordinate in vessel_position[player][vessel]:
+                            coordinate[0] += direction  # move the vessel in vessel_position
+
+                        vessel_stats[player][vessel][1][0] += direction  # move the vessel in vessel_stat
+
+                # Check if the vessel is not already on the column
+                if position_column != destination_column:
+                    # get the difference of case between the vessel and the destination
+                    delta_column = destination_column - position_column
+
+                    # check if the move is negative
+                    if delta_column < 0:
+                        direction = case * - 1
+                    else:
+                        direction = case
+
+                    # Check if not on the border
+                    if check_border('column', vessel_position[player][vessel], board, direction):
+                        for coordinate in vessel_position[player][vessel]:
+                            coordinate[1] += direction  # move the vessel in vessel_position
+
+                        vessel_stats[player][vessel][1][1] += direction  # move the vessel in vessel_stat
             else:
-                direction = case
+                # Remove the target coordinate
+                final_coordinate[player].pop(vessel)
 
-            # Check if not on a border
-            if check_border('line', vessel_position[player][vessel], board, direction):
-                for coordinate in vessel_position[player][vessel]:
-                    coordinate[0] += direction  # move the vessel in vessel_position
 
-                vessel_stats[player][vessel][1][0] += direction  # move the vessel in vessel_stat
+def hit_enemy(vessels, attacker, vessel_stats, vessel_position, player, player_estate, vessel_dmg):
+    """
+    """
+    # TODO complete the spec
+    # Check is the vessel hit it isn't itself and remove the hp
+    if vessels != attacker:
+        vessel_stats[player][vessels][2] -= vessel_dmg
 
-        # Check if the vessel is not already on the column
-        if position_column != destination_column:
-            # get the difference of case between the vessel and the destination
-            delta_column = destination_column - position_column
+        # Check if the vessel is dead and delete him is yes
+        if vessel_stats[player][vessels][2] <= 0:
+            del vessel_stats[player][vessels]
+            del vessel_position[player][vessels]
+            player_estate[player]['vessel'].remove(vessels)
 
-            # check if the move is negative
-            if delta_column < 0:
-                direction = case * - 1
-            else:
-                direction = case
 
-            # Check if not on the border
-            if check_border('column', vessel_position[player][vessel], board, direction):
-                for coordinate in vessel_position[player][vessel]:
-                    coordinate[1] += direction  # move the vessel in vessel_position
-
-                vessel_stats[player][vessel][1][1] += direction  # move the vessel in vessel_stat
+def hit_base(player, coord, player_estate, base_position, dmg):
+    """
+    """
+    # TODO complete the spec
+    if player == 1:
+        player_base = 0
     else:
-        # Remove the target coordinate
-        final_coordinate[player].pop(vessel)
+        player_base = 1
+
+    for position in base_position[player_base]:
+        if position == coord:
+            player_estate[player_base]['base_hp'] -= dmg
 
 
-def attack(player, attacker, coord, vessel_stats, vessel_position, player_estate, config):
+def attack(player, attacker, coord, vessel_stats, vessel_position, player_estate, base_position, config):
     """
     """
     # TODO complete the spec
@@ -821,12 +855,14 @@ def attack(player, attacker, coord, vessel_stats, vessel_position, player_estate
     center = vessel_stats[player][attacker][1]
     vessel_dmg = config[vessel_type][4]
 
-    # Measures the Manhattan distance(|line_a - column_b| + |line_b - column_a|)
-    delta_line = abs(coord[0] - center[1]) + abs(center[0] - coord[1])
+    # Measures the Manhattan distance(|line_b - line_a| + |column_b - column_a|)
+    delta_line = abs(coord[0] - center[0]) + abs(coord[1] - center[1])
 
     # Check if out of range
     if delta_line > vessel_range:
         return
+
+    hit_base(player, coord, player_estate, base_position, vessel_dmg)
 
     # Check if there is a vessel at this coordinate and made the shoot.
     for player in range(2):
@@ -835,16 +871,7 @@ def attack(player, attacker, coord, vessel_stats, vessel_position, player_estate
 
                 # Check when position match
                 if position == coord:
-
-                    # Check is the vessel hit it isn't itself and remove the hp
-                    if vessels != attacker:
-                        vessel_stats[player][vessels][2] -= vessel_dmg
-
-                        # Check if the vessel is dead and delete him is yes
-                        if vessel_stats[player][vessels][2] <= 0:
-                            del vessel_stats[player][vessels]
-                            del vessel_position[player][vessels]
-                            player_estate[player]['vessel'].remove(vessels)
+                    hit_enemy(vessels, attacker, vessel_stats, vessel_position, player, player_estate, vessel_dmg)
 
 
 def get_ore(vessel_stats, player_estate, environment_stats, config):
@@ -876,7 +903,7 @@ def get_ore(vessel_stats, player_estate, environment_stats, config):
 
     # Transfer the ore between the vessels and the base and sort the vessels locked, by asteroid
     for player in vessel_stats:
-        player_index = int(vessel_stats.index(player))
+        player_index = vessel_stats.index(player)
         for vessel in player:
             if player[vessel][4] == 'lock':
                 # ore from the vessels to the base
@@ -935,7 +962,7 @@ def get_ore(vessel_stats, player_estate, environment_stats, config):
 
 
 def get_order(order, vessel_stats, player_estate, environment_stats, vessel_position, final_coordinate,
-              vessel_start_position, asteroid_position, config):
+              vessel_start_position, asteroid_position, base_position, config):
     """
     Read the instructions give by the player and execute the function
 
@@ -954,7 +981,7 @@ def get_order(order, vessel_stats, player_estate, environment_stats, vessel_posi
           Arnaud Schmetz V.2 (30/03/2018)
     Impl: Arnaud Schmetz v.1 (26/03/2018)
     """
-    # TODO may be optimize the function with if at each for loop block and complete the spec
+    # TODO complete the spec
     split_orders = []
 
     for player_orders in order:
@@ -976,8 +1003,10 @@ def get_order(order, vessel_stats, player_estate, environment_stats, vessel_posi
 
                     # Buy the vessel
                     player = split_orders.index(player_orders)
-                    buy_types[buy_type][1](vessel_name, player_estate, player,
-                                           vessel_stats, vessel_position, vessel_start_position, config)
+                    if not(vessel_name in vessel_stats[player]):
+
+                        buy_types[buy_type][1](vessel_name, player_estate, player,
+                                               vessel_stats, vessel_position, vessel_start_position, config)
 
     # scroll through the orders of each player and execute each (un)lock order encountered (second turn phase)
     for player_orders in split_orders:
@@ -991,10 +1020,12 @@ def get_order(order, vessel_stats, player_estate, environment_stats, vessel_posi
 
                     player = split_orders.index(player_orders)
 
-                    if order == 'release':
-                        release(player, vessel_name, vessel_stats)
-                    else:
-                        lock(player, vessel_name, vessel_stats, player_estate, asteroid_position)
+                    if vessel_name in vessel_stats[player]:
+
+                        if order == 'release':
+                            release(player, vessel_name, vessel_stats)
+                        else:
+                            lock(player, vessel_name, vessel_stats, player_estate, asteroid_position)
 
     # scroll through the orders of each player and execute each move order encountered (third turn phase - moves)
     for player_orders in split_orders:
@@ -1003,25 +1034,27 @@ def get_order(order, vessel_stats, player_estate, environment_stats, vessel_posi
 
                 # Get the index to find any string I wan't
                 index_order = single_order.find(':')
+                index_order_type = single_order.find('@')
                 index_coord_separator = single_order.find('-', index_order)
 
                 vessel_name = single_order[:index_order]
 
                 # Get all the coordinate info in the order
-                row = single_order[index_coord_separator - 1]
-                column = single_order[index_coord_separator + 1]
+                row = single_order[index_order_type + 1:index_coord_separator]
+                column = single_order[index_coord_separator + 1:]
 
                 # Check if the coordinate given are digit
                 if row.isdigit() and column.isdigit():
                     player = split_orders.index(player_orders)
 
-                    # Update the dictionary and change the coord from a str to an int
-                    final_coordinate[player].update({vessel_name: [int(row), int(column)]})
+                    if vessel_name in vessel_stats[player]:
 
-                    # Make the move
-                    player = split_orders.index(player_orders)
-                    move(vessel_name, player, vessel_stats, vessel_position, final_coordinate,
-                         environment_stats, config)
+                        # Update the dictionary and change the coord from a str to an int
+                        player = split_orders.index(player_orders)
+                        final_coordinate[player].update({vessel_name: [int(row), int(column)]})
+
+    # Make the move
+    move(vessel_stats, vessel_position, final_coordinate, environment_stats, config)
 
     # scroll through the orders of each player and execute each attack order encountered (third turn phase - attacks)
 
@@ -1031,13 +1064,14 @@ def get_order(order, vessel_stats, player_estate, environment_stats, vessel_posi
 
                 # Get the index to find any string I wan't
                 index_order = single_order.find(':')
+                index_order_type = single_order.find('*')
                 index_coord_separator = single_order.find('-', index_order)
 
                 vessel_name = single_order[:index_order]
 
                 # Get all the coordinate info in the order
-                row = single_order[index_coord_separator - 1]
-                column = single_order[index_coord_separator + 1]
+                row = single_order[index_order_type + 1:index_coord_separator]
+                column = single_order[index_coord_separator + 1:]
 
                 # Check if the coordinate given are digit
                 if row.isdigit() and column.isdigit():
@@ -1047,7 +1081,10 @@ def get_order(order, vessel_stats, player_estate, environment_stats, vessel_posi
 
                     # Make the attack
                     player = split_orders.index(player_orders)
-                    attack(player, vessel_name, attack_coord, vessel_stats, vessel_position, player_estate, config)
+                    if vessel_name in vessel_stats[player]:
+
+                        attack(player, vessel_name, attack_coord, vessel_stats, vessel_position, player_estate,
+                               base_position, config)
 
 
 def lock(player, vessel, vessel_stats, player_estate, asteroid_position):
@@ -1125,16 +1162,10 @@ def ai(player, vessel_stats, player_estate, environment_stats, config):
     --------
     spec: Ryan Rennoir V.1 (07/04/2018)
     impl:
-    :param player:
-    :param vessel_stats:
-    :param player_estate:
-    :param environment_stats:
-    :param config:
-    :return:
     """
     orders = ''
 
-    vessel_type = ('scout', 'warship', 'excavator_s', 'excavator_m', 'excavator_l')
+    vessel_type = ('scout', 'warship', 'excavator-S', 'excavator-M', 'excavator-L')
 
     # make the purchases
     for vessel in vessel_type:
@@ -1145,7 +1176,7 @@ def ai(player, vessel_stats, player_estate, environment_stats, config):
 
             while name in vessel_stats[player]:
                 name += str(randint(0, 200))
-            orders += name + ':' + vessel
+            orders += name + ':' + vessel + ' '
 
     # make the actions for the vessels
     for vessel in vessel_stats[player]:
@@ -1155,7 +1186,7 @@ def ai(player, vessel_stats, player_estate, environment_stats, config):
         # make the actions for the excavators
         new_coordinates = [vessel_info[1][0] + randint(-1, 1),
                            vessel_info[1][1] + randint(-1, 1)]
-        if vessel_info[0] in ('excavator_m', 'excavator_s', 'excavator_l'):
+        if vessel_info[0] in ('excavator-S', 'excavator-M', 'excavator-L'):
 
             if choice == 1:
                 if len(orders) != 0:
@@ -1169,11 +1200,11 @@ def ai(player, vessel_stats, player_estate, environment_stats, config):
                         if vessel_info[1][0] == asteroid[0][0] and vessel_info[1][1] == asteroid[0][1]:
                             orders += vessel + ':lock'
 
-                    if vessel_info[1] == player_estate['base']:
+                    if vessel_info[1] == player_estate[player]['base']:
                         orders += vessel + ':lock '
 
             elif vessel_info[4] == 'release':
-                orders += vessel + ':@' + str(new_coordinates[0]) + '-' + str(new_coordinates[1])
+                orders += vessel + ':@' + str(new_coordinates[0]) + '-' + str(new_coordinates[1]) + ' '
 
         # make the actions for the offensive vessels
         else:
@@ -1181,12 +1212,12 @@ def ai(player, vessel_stats, player_estate, environment_stats, config):
                 if len(orders) != 0:
                     orders += ' '
 
-                orders += vessel + ':@' + str(new_coordinates[0]) + '-' + str(new_coordinates[1])
+                orders += vessel + ':@' + str(new_coordinates[0]) + '-' + str(new_coordinates[1]) + ' '
 
             else:
                 scope = config[vessel_info[0]][2]
                 tile_to_shoot = [vessel_info[1][0] + randint(-scope, scope), vessel_info[1][1] + randint(-scope, scope)]
-                orders += vessel + ':*' + str(tile_to_shoot[0]) + '-' + str(tile_to_shoot[1])
+                orders += vessel + ':*' + str(tile_to_shoot[0]) + '-' + str(tile_to_shoot[1]) + ' '
 
     return orders
 
@@ -1222,9 +1253,9 @@ def game():
     general = config['general']
     scout = config['scout']
     warship = config['warship']
-    excavator_s = config['excavator_s']
-    excavator_m = config['excavator_m']
-    excavator_l = config['excavator_l']
+    excavator_s = config['excavator-S']
+    excavator_m = config['excavator-M']
+    excavator_l = config['excavator-L']
 
     config = {'general': [int(general['case per move']), int(general['nb_AI']), int(general['starting_ore']),
                           int(general['base_hp'])],
@@ -1235,13 +1266,13 @@ def game():
               'warship': [int(warship['life']), int(warship['range']), int(warship['max ore']), warship['lock'],
                           int(warship['attack']), int(warship['cost'])],
 
-              'excavator_s': [int(excavator_s['life']), int(excavator_s['range']), int(excavator_s['max ore']),
+              'excavator-S': [int(excavator_s['life']), int(excavator_s['range']), int(excavator_s['max ore']),
                               excavator_l['lock'], int(excavator_s['attack']), int(excavator_s['cost'])],
 
-              'excavator_m': [int(excavator_m['life']), int(excavator_m['range']), int(excavator_m['max ore']),
+              'excavator-M': [int(excavator_m['life']), int(excavator_m['range']), int(excavator_m['max ore']),
                               excavator_m['lock'], int(excavator_m['attack']), int(excavator_m['cost'])],
 
-              'excavator_l': [int(excavator_l['life']), int(excavator_l['range']), int(excavator_l['max ore']),
+              'excavator-L': [int(excavator_l['life']), int(excavator_l['range']), int(excavator_l['max ore']),
                               excavator_l['lock'], int(excavator_l['attack']), int(excavator_l['cost'])]}
 
     # Init the game loop
@@ -1267,8 +1298,10 @@ def game():
             command_p1 = input('Player 1:')
             command_p2 = input('Player 2:')
 
+        print(command_p2)
+
         get_order([command_p1, command_p2], vessel_stats, player_estate, environment_stats, vessel_position,
-                  final_coordinate, vessel_start_position, asteroid_position, config)
+                  final_coordinate, vessel_start_position, asteroid_position, base_position, config)
 
         # TODO debug get_ore
         # get_ore(vessel_stats, player_estate, environment_stats, game_config)
