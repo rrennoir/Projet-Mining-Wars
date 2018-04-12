@@ -924,7 +924,7 @@ def get_ore(vessel_stats, player_estate, environment_stats, config):
                     else:
                         ore_to_get = config[vessel_stats[player_index][vessel][0]][3] - player[vessel][3]
 
-                    vessels_by_asteroid[coordinates].append([vessel, ore_to_get, player_index])
+                    vessels_by_asteroid[coordinates][0] .append([vessel, ore_to_get, player_index])
                     vessels_by_asteroid[coordinates][2] += ore_to_get
                     vessels_by_asteroid[coordinates][3] += 1
 
