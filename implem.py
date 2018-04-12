@@ -15,7 +15,7 @@ def create_data(config):
     Return:
     -------
     vessel_stats : contains the information about the vessels of the players (lis)
-    players-estate : contains the ore_amount, the vessels and the base of each player (list)
+    player-estate : contains the ore_amount, the vessels and the base of each player (list)
     environment_stats : contains the board size and the ore of each asteroid (dic)
     vessel_position : contains the position of each entire vessel into a list (list)
     asteroid_position : contains the position of each asteroid (list)
@@ -77,6 +77,15 @@ def create_data(config):
 
 def create_base_position(player_estate):
     """
+    
+    Parameters :
+    ------------
+    player_estate : Player stats (list)
+    
+    Version :
+    ---------
+    Spec : Ryan Rennoir (//2018)
+    Impl : Ryan Rennoir (//2018)
     """
     # TODO complete the spec
     base_position = []
@@ -100,8 +109,20 @@ def create_base_position(player_estate):
 
 def check_ore_account(player, player_estate, price):
     """
+    Check if the player has enough ore to buy the vessel he wants to buy, and if he has, take the ore
+    
+    Parameters :
+    ------------
+    player : Player number 0 or 1 (int)
+    player-estate : contains the ore_amount, the vessels and the base of each player (list)
+    price : the price of the vessel (int)
+    
+    Version :
+    ---------
+    spec : Arnaud sChmetz v.1 (12/04/2018)
+    implem : Ryan Rennoir v.1 (11/04/2018)
+    
     """
-    # TODO complete the spec
     player_account = player_estate[player]['ore_amount']
 
     if price > player_account:
@@ -170,7 +191,8 @@ def create_warship(name, player_estate, player, vessel_stats, vessel_position, v
 
     Version:
     --------
-    Spec: Ryan Rennoir V.2 (23/03/2018)
+    Spec : Ryan Rennoir V.2 (23/03/2018)
+    Impl : Ryan Rennoir V.1 (//2018)
     """
     # TODO complete the spec
     vessel_type = 'warship'
@@ -831,7 +853,7 @@ def hit_enemy(vessels, attacker, vessel_stats, vessel_position, player, player_e
 
 
 def hit_base(player, coord, player_estate, base_position, dmg):
-    """
+    """   
     """
     # TODO complete the spec
     if player == 1:
@@ -846,6 +868,19 @@ def hit_base(player, coord, player_estate, base_position, dmg):
 
 def attack(player, attacker, coord, vessel_stats, vessel_position, player_estate, base_position, config):
     """
+    Make the attack of a vessel on the targeted coordinates 
+    
+    Parameters:
+    -----------
+    player : Player number 0 or 1 (int)
+    attacker : name of the vessel which is making the attack (str)
+    coord : coordinates of the place the vessel is attacking (list)
+    vessel_stats : The dictionary with all vessel stats (list)
+    vessel_position : The dictionary with all vessel position (list)
+    player_estate : Player stats (list)
+    base_position :
+    config :
+    
     """
     # TODO complete the spec
     # Get the range from the config.
@@ -1150,7 +1185,7 @@ def ai(player, vessel_stats, player_estate, environment_stats, config):
     -----------
     player : tell the IA, which player she is (0 or 1) (int)
     vessel_stat : contains the information about the vessels of the players (list)
-    players_estate : contains the ore_amount, the vessels and the base of each player (list)
+    player_estate : contains the ore_amount, the vessels and the base of each player (list)
     environment_stats : contain the board size and the ore of each asteroid (dictionary)
     vessel_position : contain the position of each entire vessel into a list (list)
 
@@ -1161,7 +1196,7 @@ def ai(player, vessel_stats, player_estate, environment_stats, config):
     Version:
     --------
     spec: Ryan Rennoir V.1 (07/04/2018)
-    impl:
+    impl: Arnaud Schmetz V.1 (09/04/2018)
     """
     orders = ''
 
@@ -1224,6 +1259,20 @@ def ai(player, vessel_stats, player_estate, environment_stats, config):
 
 def continue_game(player_estate):
     """
+    Check if the game is ended or not 
+    
+    Parameters :
+    ------------
+    player_estate : contains the ore_amount, the vessels and the base of each player (list)
+    
+    Return :
+    --------
+    (bool) True if the game must continue, or False if it is ended
+    
+    Version :
+    ---------
+    Spec :
+    Impl : Ryan Rennoir V.1 (//2018)
     """
     # TODO complete the spec
     for player in player_estate:
