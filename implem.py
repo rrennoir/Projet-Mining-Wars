@@ -159,9 +159,9 @@ def create_scout(name, player_estate, player, vessel_stats, vessel_position, ves
         return
 
     life = config[vessel_type][0]
-    tonnage = config[vessel_type][1]
+    tonnage = config[vessel_type][2]
 
-    if config[vessel_type][2]:
+    if config[vessel_type][3]:
         locking = 'release'
     else:
         locking = None
@@ -202,8 +202,8 @@ def create_warship(name, player_estate, player, vessel_stats, vessel_position, v
         return
 
     life = config[vessel_type][0]
-    tonnage = config[vessel_type][1]
-    if config[vessel_type][2]:
+    tonnage = config[vessel_type][2]
+    if config[vessel_type][3]:
         locking = 'release'
     else:
         locking = None
@@ -246,8 +246,8 @@ def create_excavator_s(name, player_estate, player, vessel_stats, vessel_positio
         return
 
     life = config[vessel_type][0]
-    tonnage = config[vessel_type][1]
-    if config[vessel_type][2]:
+    tonnage = config[vessel_type][2]
+    if config[vessel_type][3]:
         locking = 'release'
     else:
         locking = None
@@ -290,8 +290,8 @@ def create_excavator_m(name, player_estate, player, vessel_stats, vessel_positio
         return
 
     life = config[vessel_type][0]
-    tonnage = config[vessel_type][1]
-    if config[vessel_type][2]:
+    tonnage = config[vessel_type][2]
+    if config[vessel_type][3]:
         locking = 'release'
     else:
         locking = None
@@ -334,8 +334,8 @@ def create_excavator_l(name, player_estate, player, vessel_stats, vessel_positio
         return
 
     life = config[vessel_type][0]
-    tonnage = config[vessel_type][1]
-    if config[vessel_type][2]:
+    tonnage = config[vessel_type][2]
+    if config[vessel_type][3]:
         locking = 'release'
     else:
         locking = None
@@ -628,8 +628,17 @@ def game_stats_ui(vessel_stats, player_estate, environment_stats):
 
         # Add ever vessel for each player
         for vessel in vessel_stats[player]:
-            _ui.append(vessel + ':')
-            _ui.append(vessel_stats[player][vessel])
+            vessel_info = vessel_stats[player][vessel]
+
+            vessel_type = str(vessel_info[0])
+            vessel_coord = str(vessel_info[1])
+            vessel_hp = str(vessel_info[2])
+            vessel_ore = str(vessel_info[3])
+            vessel_state = str(vessel_info[4])
+
+            _ui.append(vessel + ' is a ' + vessel_type + ' at ' + vessel_coord + ':')
+
+            _ui.append(' with ' + vessel_hp + ' HP, ' + vessel_ore + ' ore and state = ' + vessel_state)
 
         # Pass a line between players
         _ui += ' '
@@ -861,7 +870,7 @@ def move(vessel_stats, vessel_position, final_coordinate, environment_stats, con
             final_coordinate[_player].pop(_vessel)
 
 
-def hit_enemy(vessels, attacker, vessel_stats, vessel_position, player, player_estate, vessel_dmg):
+def hit_enemy(vessels, attacker, vessel_stats,  player, vessel_dmg):
     """
     """
     # TODO complete the spec
@@ -951,7 +960,7 @@ def attack(player, attacker, coord, vessel_stats, vessel_position, player_estate
 
                 # Check when position match
                 if position == coord:
-                    hit_enemy(vessels, attacker, vessel_stats, vessel_position, player, player_estate, vessel_dmg)
+                    hit_enemy(vessels, attacker, vessel_stats, player, vessel_dmg)
 
     # Check if there is vessels dead and delete them if yes
     remove_vessel(vessel_stats, vessel_position, player_estate)
@@ -1400,20 +1409,20 @@ def game():
     config = {'general': [int(general['case per move']), int(general['nb_AI']), int(general['starting_ore']),
                           int(general['base_hp'])],
 
-              'scout': [int(scout['life']), int(scout['range']), int(scout['max ore']), scout['lock'],
+              'scout': [int(scout['life']), int(scout['range']), int(scout['max ore']), bool(scout['lock']),
                         int(scout['attack']), int(scout['cost'])],
 
-              'warship': [int(warship['life']), int(warship['range']), int(warship['max ore']), warship['lock'],
+              'warship': [int(warship['life']), int(warship['range']), int(warship['max ore']), bool(warship['lock']),
                           int(warship['attack']), int(warship['cost'])],
 
               'excavator-S': [int(excavator_s['life']), int(excavator_s['range']), int(excavator_s['max ore']),
-                              excavator_l['lock'], int(excavator_s['attack']), int(excavator_s['cost'])],
+                              bool(excavator_l['lock']), int(excavator_s['attack']), int(excavator_s['cost'])],
 
               'excavator-M': [int(excavator_m['life']), int(excavator_m['range']), int(excavator_m['max ore']),
-                              excavator_m['lock'], int(excavator_m['attack']), int(excavator_m['cost'])],
+                              bool(excavator_m['lock']), int(excavator_m['attack']), int(excavator_m['cost'])],
 
               'excavator-L': [int(excavator_l['life']), int(excavator_l['range']), int(excavator_l['max ore']),
-                              excavator_l['lock'], int(excavator_l['attack']), int(excavator_l['cost'])]}
+                              bool(excavator_l['lock']), int(excavator_l['attack']), int(excavator_l['cost'])]}
 
     # Init the game loop
     vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position, vessel_start_position, \
@@ -1441,7 +1450,7 @@ def game():
             command_p1 = input('Player 1:')
             command_p2 = input('Player 2:')
 
-        print(command_p2)
+        print('AI say: ' + command_p2)
 
         get_order([command_p1, command_p2], vessel_stats, player_estate, environment_stats, vessel_position,
                   final_coordinate, vessel_start_position, asteroid_position, base_position, config)
