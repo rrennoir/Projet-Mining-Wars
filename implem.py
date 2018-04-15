@@ -159,7 +159,7 @@ def create_scout(name, player_estate, player, vessel_stats, vessel_position, ves
         return
 
     life = config[vessel_type][0]
-    tonnage = config[vessel_type][2]
+    tonnage = 0
 
     if config[vessel_type][3]:
         locking = 'release'
@@ -202,7 +202,8 @@ def create_warship(name, player_estate, player, vessel_stats, vessel_position, v
         return
 
     life = config[vessel_type][0]
-    tonnage = config[vessel_type][2]
+    tonnage = 0
+
     if config[vessel_type][3]:
         locking = 'release'
     else:
@@ -246,7 +247,8 @@ def create_excavator_s(name, player_estate, player, vessel_stats, vessel_positio
         return
 
     life = config[vessel_type][0]
-    tonnage = config[vessel_type][2]
+    tonnage = 0
+
     if config[vessel_type][3]:
         locking = 'release'
     else:
@@ -290,7 +292,8 @@ def create_excavator_m(name, player_estate, player, vessel_stats, vessel_positio
         return
 
     life = config[vessel_type][0]
-    tonnage = config[vessel_type][2]
+    tonnage = 0
+
     if config[vessel_type][3]:
         locking = 'release'
     else:
@@ -334,7 +337,8 @@ def create_excavator_l(name, player_estate, player, vessel_stats, vessel_positio
         return
 
     life = config[vessel_type][0]
-    tonnage = config[vessel_type][2]
+    tonnage = 0
+
     if config[vessel_type][3]:
         locking = 'release'
     else:
@@ -1080,7 +1084,7 @@ def get_order(order, vessel_stats, player_estate, environment_stats, vessel_posi
     -----------
     order :Instruction of the player (list)
     vessel_stats : contains the information about the vessels of the players (dictionary)
-    player-estate : contains the ore_amount, the vessels and the base of each player (dictionary)
+    player_estate : contains the ore_amount, the vessels and the base of each player (dictionary)
     environment_stats : contains the board size and the ore of each asteroid (dictionary)
     vessel_position : contains the position of each entire vessel into a list (dictionary)
     final_coordinate :
@@ -1218,20 +1222,21 @@ def get_order(order, vessel_stats, player_estate, environment_stats, vessel_posi
 
 def lock(player, vessel, vessel_stats, player_estate, asteroid_position):
     """
-    Lock or release the excavator
+    Lock the excavator
 
     Parameters:
     -----------
-    player:
-    vessels:
-    vessel_stats:
+    player: player index for list 0 or 1 (int)
+    vessels: name of the vessel (str)
+    vessel_stat: contains the information about the vessels of the players (list)
+    player_estate : contains the ore_amount, the vessels and the base of each player (dic)
+    asteroid_position: contain all asteroid position (list)
 
     Version:
     --------
     Spec: Ryan Rennoir V.1 (07/04/2018)
     Impl: Ryan Rennoir V.1 (07/04/2018)
     """
-    # TODO complete the spec
     state = vessel_stats[player][vessel][4]
 
     if state is None or state == 'lock':
@@ -1259,16 +1264,15 @@ def release(player, vessel, vessel_stats):
 
     Parameters:
     -----------
-    player:
-    vessels:
-    vessel_stats:
+    player: player index for list 0 or 1 (int)
+    vessels: name of the vessel (str)
+    vessel_stat : contains the information about the vessels of the players (list)
 
     Version:
     --------
     Spec: Ryan Rennoir V.1 (07/04/2018)
     Impl: Ryan Rennoir V.1 (07/04/2018)
     """
-    # TODO complete the spec
     state = vessel_stats[player][vessel][4]
 
     if state is None or state == 'release':
@@ -1277,17 +1281,15 @@ def release(player, vessel, vessel_stats):
     vessel_stats[player][vessel][4] = 'release'
 
 
-def ai(player, vessel_stats, player_estate, environment_stats, config):
+def ai(player, vessel_stats, environment_stats):
     """
-    calculate what the IA will do.
+    Calculate what the IA will do.
 
     Parameters:
     -----------
     player : tell the IA, which player she is (0 or 1) (int)
     vessel_stat : contains the information about the vessels of the players (list)
-    player_estate : contains the ore_amount, the vessels and the base of each player (list)
     environment_stats : contain the board size and the ore of each asteroid (dictionary)
-    vessel_position : contain the position of each entire vessel into a list (list)
 
     Return:
     -------
@@ -1316,14 +1318,18 @@ def ai(player, vessel_stats, player_estate, environment_stats, config):
             orders += name + ':' + vessel + ' '
 
         if len(vessel_stats[player]) > 0:
+            vessels = []
+            for vessel in vessel_stats[player]:
+                vessels.append(vessel)
 
-            elements = len(vessel_stats[player]) - 1
-            vessel = vessel_stats[player][randint(0, elements)]
+            elements = len(vessels) - 1
+
+            vessel = vessels[randint(0, elements)]
 
             if action == 'move' or action == 'attack':
 
                 # make the actions for the vessels
-                bord = environment_stats['board']
+                bord = environment_stats['board_size']
 
                 row = randint(0, bord[0])
                 column = randint(0, bord[1])
@@ -1342,12 +1348,12 @@ def ai(player, vessel_stats, player_estate, environment_stats, config):
                 random = randint(0, 1)
 
                 if random == 1:
-                    order_type = 'release'
+                    order_type = ':release'
 
                 else:
                     order_type = ':lock'
 
-                orders += vessel + order_type
+                orders += vessel + order_type + ' '
 
     return orders
 
@@ -1356,20 +1362,19 @@ def continue_game(player_estate):
     """
     Check if the game is ended or not 
     
-    Parameters :
-    ------------
-    player_estate : contains the ore_amount, the vessels and the base of each player (list)
+    Parameters:
+    -----------
+    player_estate: contains the ore_amount, the vessels and the base of each player (list)
     
-    Return :
+    Return:
+    -------
+    Result: True if the game must continue, or False if it is ended (bool)
+    
+    Version:
     --------
-    (bool) True if the game must continue, or False if it is ended
-    
-    Version :
-    ---------
-    Spec :
-    Impl : Ryan Rennoir V.1 (//2018)
+    Spec: Arnaud Schmetz V.1 (09/04/2018)
+    Impl: Ryan Rennoir V.1 (11/04/2018)
     """
-    # TODO complete the spec
     for player in player_estate:
 
         base = player['base_hp']
@@ -1378,8 +1383,31 @@ def continue_game(player_estate):
 
         if ore == 0 and vessel == [] or base <= 0:
             return False
-        else:
-            return True
+
+    return True
+
+
+def check_bool(string):
+    """
+    If input string equal to True return True, False other wise.
+
+    Parameters:
+    -----------
+    string: String to test (str)
+
+    Return:
+    -------
+    Result: True or False (bool)
+
+    Version:
+    --------
+    Spec : Ryan Rennoir V.1 (15/04/2018)
+    Impl : Ryan Rennoir V.1 (15/04/2018)
+    """
+    if string == 'True':
+        return True
+
+    return False
 
 
 def game():
@@ -1395,6 +1423,12 @@ def game():
     config.read('config.ini')
 
     general = config['general']
+
+    if general['max_round'] == 'None':
+        max_round = None
+    else:
+        max_round = int(general['max_round'])
+
     scout = config['scout']
     warship = config['warship']
     excavator_s = config['excavator-S']
@@ -1402,22 +1436,22 @@ def game():
     excavator_l = config['excavator-L']
 
     config = {'general': [int(general['case per move']), int(general['nb_AI']), int(general['starting_ore']),
-                          int(general['base_hp'])],
+                          int(general['base_hp']), max_round],
 
-              'scout': [int(scout['life']), int(scout['range']), int(scout['max ore']), bool(scout['lock']),
+              'scout': [int(scout['life']), int(scout['range']), int(scout['max ore']), check_bool(scout['lock']),
                         int(scout['attack']), int(scout['cost'])],
 
-              'warship': [int(warship['life']), int(warship['range']), int(warship['max ore']), bool(warship['lock']),
+              'warship': [int(warship['life']), int(warship['range']), int(warship['max ore']), check_bool(warship['lock']),
                           int(warship['attack']), int(warship['cost'])],
 
               'excavator-S': [int(excavator_s['life']), int(excavator_s['range']), int(excavator_s['max ore']),
-                              bool(excavator_l['lock']), int(excavator_s['attack']), int(excavator_s['cost'])],
+                              check_bool(excavator_l['lock']), int(excavator_s['attack']), int(excavator_s['cost'])],
 
               'excavator-M': [int(excavator_m['life']), int(excavator_m['range']), int(excavator_m['max ore']),
-                              bool(excavator_m['lock']), int(excavator_m['attack']), int(excavator_m['cost'])],
+                              check_bool(excavator_m['lock']), int(excavator_m['attack']), int(excavator_m['cost'])],
 
               'excavator-L': [int(excavator_l['life']), int(excavator_l['range']), int(excavator_l['max ore']),
-                              bool(excavator_l['lock']), int(excavator_l['attack']), int(excavator_l['cost'])]}
+                              check_bool(excavator_l['lock']), int(excavator_l['attack']), int(excavator_l['cost'])]}
 
     # Init the game loop
     vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position, vessel_start_position, \
@@ -1430,33 +1464,43 @@ def game():
     # Draw the map for the first time
     ui(vessel_stats, player_estate, vessel_position,environment_stats, asteroid_position, base_position)
 
+    _round = 0
+
     while game_loop:
 
         # Check how many ai's
         if nb_ai == 2:
-            command_p1 = ai(0, vessel_stats, player_estate, environment_stats, config)
-            command_p2 = ai(1, vessel_stats, player_estate, environment_stats, config)
+            command_p1 = ai(0, vessel_stats, environment_stats)
+            command_p2 = ai(1, vessel_stats, environment_stats)
+            print('AI 1 say: ' + command_p1)
+            print('AI 2 say: ' + command_p2)
 
         elif nb_ai == 1:
             command_p1 = input('Player 1:')
-            command_p2 = ai(1, vessel_stats, player_estate, environment_stats, config)
-
+            command_p2 = ai(1, vessel_stats, environment_stats)
+            print('AI 2 say: ' + command_p2)
         else:
             command_p1 = input('Player 1:')
             command_p2 = input('Player 2:')
 
-        print('AI say: ' + command_p2)
 
         get_order([command_p1, command_p2], vessel_stats, player_estate, environment_stats, vessel_position,
                   final_coordinate, vessel_start_position, asteroid_position, base_position, config)
 
-        # TODO debug get_ore
         get_ore(vessel_stats, player_estate, environment_stats, config)
 
         ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid_position, base_position)
 
         # Check if the game end
         game_loop = continue_game(player_estate)
+
+        if config['general'][4] == _round:
+            game_loop = False
+
+        _round += 1
+
+    if not game_loop:
+        print('Game over')
 
 
 game()
