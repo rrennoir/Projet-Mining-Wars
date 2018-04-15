@@ -119,8 +119,8 @@ def check_ore_account(player, player_estate, price):
     
     Version :
     ---------
-    spec : Arnaud sChmetz v.1 (12/04/2018)
-    implem : Ryan Rennoir v.1 (11/04/2018)
+    spec : Arnaud Schmetz v.1 (12/04/2018)
+    impl : Ryan Rennoir v.1 (11/04/2018)
     
     """
     player_account = player_estate[player]['ore_amount']
@@ -1302,57 +1302,52 @@ def ai(player, vessel_stats, player_estate, environment_stats, config):
 
     vessel_type = ('scout', 'warship', 'excavator-S', 'excavator-M', 'excavator-L')
 
-    # make the purchases
-    for vessel in vessel_type:
-        cost = config[vessel][5]
+    for i in range(randint(0, 3)):
 
-        if player_estate[player]['ore_amount'] >= cost and orders == '':
-            name = 'vessel_'
+        action_type = ['buy', 'move', 'lock', 'attack']
 
-            while name in vessel_stats[player]:
-                name += str(randint(0, 200))
+        action = action_type[randint(0, 3)]
+
+        if action == 'buy':
+
+            # make the purchases
+            name = 'vessel_' + str(randint(0, 200))
+            vessel = vessel_type[randint(0, 4)]
             orders += name + ':' + vessel + ' '
 
-    # make the actions for the vessels
-    for vessel in vessel_stats[player]:
-        choice = randint(0, 1)
-        vessel_info = vessel_stats[player][vessel]
+        if len(vessel_stats[player]) > 0:
 
-        # make the actions for the excavators
-        new_coordinates = [vessel_info[1][0] + randint(-1, 1),
-                           vessel_info[1][1] + randint(-1, 1)]
-        if vessel_info[0] in ('excavator-S', 'excavator-M', 'excavator-L'):
+            elements = len(vessel_stats[player]) - 1
+            vessel = vessel_stats[player][randint(0, elements)]
 
-            if choice == 1:
-                if len(orders) != 0:
-                    orders += ' '
+            if action == 'move' or action == 'attack':
 
-                if vessel_info[4] == 'lock':
-                    orders += vessel + ':release'
+                # make the actions for the vessels
+                bord = environment_stats['board']
+
+                row = randint(0, bord[0])
+                column = randint(0, bord[1])
+                new_coordinates = [row, column]
+
+                if action == 'attack':
+                    order_type = ':*'
 
                 else:
-                    for asteroid in environment_stats['asteroid']:
-                        if vessel_info[1][0] == asteroid[0][0] and vessel_info[1][1] == asteroid[0][1]:
-                            orders += vessel + ':lock'
+                    order_type = ':@'
 
-                    if vessel_info[1] == player_estate[player]['base']:
-                        orders += vessel + ':lock '
+                orders += vessel + order_type + str(new_coordinates[0]) + '-' + str(new_coordinates[1]) + ' '
 
-            elif vessel_info[4] == 'release':
-                orders += vessel + ':@' + str(new_coordinates[0]) + '-' + str(new_coordinates[1]) + ' '
+            if action == 'lock':
 
-        # make the actions for the offensive vessels
-        else:
-            if choice == 1:
-                if len(orders) != 0:
-                    orders += ' '
+                random = randint(0, 1)
 
-                orders += vessel + ':@' + str(new_coordinates[0]) + '-' + str(new_coordinates[1]) + ' '
+                if random == 1:
+                    order_type = 'release'
 
-            else:
-                scope = config[vessel_info[0]][2]
-                tile_to_shoot = [vessel_info[1][0] + randint(-scope, scope), vessel_info[1][1] + randint(-scope, scope)]
-                orders += vessel + ':*' + str(tile_to_shoot[0]) + '-' + str(tile_to_shoot[1]) + ' '
+                else:
+                    order_type = ':lock'
+
+                orders += vessel + order_type
 
     return orders
 
