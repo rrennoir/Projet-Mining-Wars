@@ -1,6 +1,20 @@
 To lunch the game:
 Run mining_wars_gr_35.py
 
+Basic commands:
+
+    Buy a vessel:
+        name:type
+
+    move a vessel:
+        name:@row-column
+
+    attack a vessel:
+        name:*row-column
+
+    lock or release a vessel:
+        name:lock  or  release
+
 Game_config.mw:
 Configure the game parameters like the portal coordinate or the asteroid, ect.
 Just open the game_config.mw file with notepad or similar and change what ever
