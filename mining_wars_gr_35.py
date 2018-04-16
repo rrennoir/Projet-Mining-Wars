@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from termcolor import colored
 import os
 import configparser
