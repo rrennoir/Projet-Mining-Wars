@@ -14,11 +14,7 @@ def create_data(config):
 
     Return:
     -------
-    vessel_stats : contains the information about the vessels of the players (lis)
-    player-estate : contains the ore_amount, the vessels and the base of each player (list)
-    environment_stats : contains the board size and the ore of each asteroid (dic)
-    vessel_position : contains the position of each entire vessel into a list (list)
-    asteroid_position : contains the position of each asteroid (list)
+    data: list with all data structure (list)
 
     Version:
     --------
@@ -63,7 +59,12 @@ def create_data(config):
     for i in range(len(game_config) - 6):
         asteroid_info = game_config[i + 6].split()
 
-        _asteroid += [[[int(asteroid_info[0]), int(asteroid_info[1])], int(asteroid_info[2]), int(asteroid_info[3])]]
+        asteroid_coord = [int(asteroid_info[0]),  int(asteroid_info[1])]
+        asteroid_max_ore = int(asteroid_info[2])
+        ore_output = int(asteroid_info[3])
+
+        _asteroid += [[asteroid_coord, asteroid_max_ore, ore_output]]
+
         asteroid_position.append([int(asteroid_info[0]), int(asteroid_info[1])])
 
     environment_stats.update({'asteroid': _asteroid})
@@ -72,8 +73,11 @@ def create_data(config):
     vessel_start_position = create_vessel_starting_position(player_estate)
     base_position = create_base_position(player_estate)
 
-    return vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position, \
-           vessel_start_position, base_position
+    # Just one line to return
+    data = [vessel_stats, player_estate, environment_stats, vessel_position,
+            asteroid_position, vessel_start_position, base_position]
+
+    return data
 
 
 def create_base_position(player_estate):
@@ -775,7 +779,7 @@ def ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid
 
     # Print the legends at the end
     print('Color: Green Player 1, Red Player 2\n'
-          'Characters:  □ Nothing, ● Base, ▣ Asteroid, ◎ Excavator, ◇ Scout, △ Warship')
+          'Characters:  □ Nothing, ● Base, ▣ Asteroid, ◎ Excavator, ◇ Scout, △ Warship\n')
 
 
 def check_border(type_axis, vessel_position, board, direction):
@@ -1165,9 +1169,11 @@ def get_order(order, vessel_stats, player_estate, environment_stats, vessel_posi
         split_orders.append(player_orders.split())
 
     # scroll through the orders of each player and execute each buy order encountered (first turn phase)
-    buy_types = {'scout': ('scout', create_scout), 'warship': ('warship', create_warship),
+    buy_types = {'scout': ('scout', create_scout),
+                 'warship': ('warship', create_warship),
                  'excavator-M': ('excavator-M', create_excavator_m),
-                 'excavator-S': ('excavator-S', create_excavator_s), 'excavator-L': ('excavator-L', create_excavator_l)}
+                 'excavator-S': ('excavator-S', create_excavator_s),
+                 'excavator-L': ('excavator-L', create_excavator_l)}
 
     # Check false order (without the ':')
     false_order = [[], []]
@@ -1190,18 +1196,21 @@ def get_order(order, vessel_stats, player_estate, environment_stats, vessel_posi
     for player_orders in split_orders:
         for single_order in player_orders:
             for buy_type in buy_types:
-                if single_order.find(buy_type) != -1:
+
+                index_order = single_order.find(':')
+                vessel_type_to_buy = single_order[index_order:]
+
+                if vessel_type_to_buy.find(buy_type) != -1:
 
                     # Get the vessel name
-                    index_order = single_order.find(':')
                     vessel_name = single_order[:index_order]
 
                     # Buy the vessel
                     player = split_orders.index(player_orders)
                     if not(vessel_name in vessel_stats[player]):
 
-                        buy_types[buy_type][1](vessel_name, player_estate, player,
-                                               vessel_stats, vessel_position, vessel_start_position, config)
+                        buy_types[buy_type][1](vessel_name, player_estate, player, vessel_stats,
+                                               vessel_position, vessel_start_position, config)
 
     # scroll through the orders of each player and execute each (un)lock order encountered (second turn phase)
     for player_orders in split_orders:
@@ -1517,15 +1526,24 @@ def game():
                               check_bool(excavator_l['lock']), int(excavator_l['attack']), int(excavator_l['cost'])]}
 
     # Init the game loop
-    vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position, vessel_start_position, \
-    base_position = create_data(config)
+    data = create_data(config)
 
+    # Get all game structure
+    vessel_stats = data[0]
+    player_estate = data[1]
+    environment_stats = data[2]
+    vessel_position = data[3]
+    asteroid_position = data[4]
+    vessel_start_position = data[5]
+    base_position = data[6]
+
+    # Init the game
     nb_ai = config['general'][1]
     final_coordinate = [{}, {}]
     game_loop = True
 
     # Draw the map for the first time
-    ui(vessel_stats, player_estate, vessel_position,environment_stats, asteroid_position, base_position)
+    ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid_position, base_position)
 
     _round = 0
 
