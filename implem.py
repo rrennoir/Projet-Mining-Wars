@@ -610,7 +610,7 @@ def game_stats_ui(vessel_stats, player_estate, environment_stats):
     Parameters:
     -----------
     vessel_stats: contain all stats of the vessels (list)
-    player_estate: cotain all of stats about the player (list)
+    player_estate: contain all of stats about the player (list)
     environment_stats: contain all information of the game (dic)
 
     Return:
@@ -628,11 +628,12 @@ def game_stats_ui(vessel_stats, player_estate, environment_stats):
     # Add ever asteroid in the game
     _asteroid = environment_stats['asteroid']
     for asteroid in _asteroid:
-        asteroid_coord = str(asteroid[0])
-        asteroid_ore = str(asteroid[1])
-        asteroid_throughput = str(asteroid[2])
 
-        _ui.append('In ' + asteroid_coord + ' with ' + asteroid_ore + ' ore at ' + asteroid_throughput + ' /round')
+        asteroid_coord = asteroid[0]
+        asteroid_ore = asteroid[1]
+        asteroid_throughput = asteroid[2]
+
+        _ui.append('In %s whit %s ore at %s/round' % (asteroid_coord, asteroid_ore, asteroid_throughput))
 
     # Pass a line
     _ui += ' '
@@ -640,14 +641,14 @@ def game_stats_ui(vessel_stats, player_estate, environment_stats):
     # Stats for players
     for player in range(2):
 
-        ore_amount = str(player_estate[player]['ore_amount'])
+        ore_amount = player_estate[player]['ore_amount']
 
-        _ui.append('Player ' + str(player + 1) + ' with ' + ore_amount + ' ore:')
+        _ui.append('Player %s with %s ore:' % (player + 1, ore_amount))
 
-        base_hp = str(player_estate[player]['base_hp'])
-        base_coord = str([player_estate[player]['base'][0], player_estate[player]['base'][1]])
+        base_hp = player_estate[player]['base_hp']
+        base_coord = [player_estate[player]['base'][0], player_estate[player]['base'][1]]
 
-        _ui.append('Base at ' + base_coord + ' with ' + base_hp + ' HP')
+        _ui.append('Base at %s with %s HP' % (base_coord, base_hp))
 
         # Add ever vessel for each player
         for vessel in vessel_stats[player]:
@@ -659,9 +660,9 @@ def game_stats_ui(vessel_stats, player_estate, environment_stats):
             vessel_ore = str(vessel_info[3])
             vessel_state = str(vessel_info[4])
 
-            _ui.append(vessel + ' is a ' + vessel_type + ' at ' + vessel_coord + ':')
+            _ui.append('%s is a %s at %s:' % (vessel, vessel_type, vessel_coord))
 
-            _ui.append(' with ' + vessel_hp + ' HP, ' + vessel_ore + ' ore and state = ' + vessel_state)
+            _ui.append(' with %s HP, %s ore and state = %s' % (vessel_hp, vessel_ore, vessel_state))
 
         # Pass a line between players
         _ui += ' '
