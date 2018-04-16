@@ -1121,6 +1121,7 @@ def get_ore(vessel_stats, player_estate, environment_stats, config):
             while environment_stats['asteroid'][vessels_by_asteroid[asteroid][1]][1] != 0:
                 shared_ore = environment_stats['asteroid'][vessels_by_asteroid[asteroid][1]][1] / \
                              vessels_by_asteroid[asteroid][3]
+
                 for vessel in vessels_by_asteroid[asteroid]:
 
                     # if the vessel can get the amount of ore, equitably shared, make the transfer
@@ -1128,6 +1129,7 @@ def get_ore(vessel_stats, player_estate, environment_stats, config):
                         environment_stats['asteroid'][vessels_by_asteroid[asteroid][1]][1] -= shared_ore
                         vessel_stats[vessel[2]][vessel[0]][3] += shared_ore
                         vessels_by_asteroid[asteroid][vessels_by_asteroid[asteroid].index(vessel)][1] -= shared_ore
+
                         if vessels_by_asteroid[asteroid][vessels_by_asteroid[asteroid].index(vessel)][1] == 0:
                             vessels_by_asteroid[asteroid][3] -= 1
 
