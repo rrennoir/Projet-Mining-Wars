@@ -633,7 +633,7 @@ def game_stats_ui(vessel_stats, player_estate, environment_stats):
         asteroid_ore = asteroid[1]
         asteroid_throughput = asteroid[2]
 
-        _ui.append('In %s whit %s ore at %s/round' % (asteroid_coord, asteroid_ore, asteroid_throughput))
+        _ui.append('In %s with %s ore at %s/round' % (asteroid_coord, asteroid_ore, asteroid_throughput))
 
     # Pass a line
     _ui += ' '
@@ -1118,15 +1118,16 @@ def get_ore(vessel_stats, player_estate, environment_stats, config):
 
         # if asteroid doesn't have enough ore, share it between the vessels
         else:
-            while environment_stats['asteroid'][vessels_by_asteroid[asteroid][1]][1] != 0:
-                shared_ore = environment_stats['asteroid'][vessels_by_asteroid[asteroid][1]][1] / \
-                             vessels_by_asteroid[asteroid][3]
+            asteroid_ore = environment_stats['asteroid'][vessels_by_asteroid[asteroid][1]][1]
+
+            while asteroid_ore != 0:
+                shared_ore = asteroid_ore / vessels_by_asteroid[asteroid][3]
 
                 for vessel in vessels_by_asteroid[asteroid]:
 
                     # if the vessel can get the amount of ore, equitably shared, make the transfer
                     if shared_ore <= vessel[1]:
-                        environment_stats['asteroid'][vessels_by_asteroid[asteroid][1]][1] -= shared_ore
+                        asteroid_ore -= shared_ore
                         vessel_stats[vessel[2]][vessel[0]][3] += shared_ore
                         vessels_by_asteroid[asteroid][vessels_by_asteroid[asteroid].index(vessel)][1] -= shared_ore
 
@@ -1375,6 +1376,7 @@ def ai(player, vessel_stats, environment_stats):
     spec: Ryan Rennoir V.1 (07/04/2018)
     impl: Arnaud Schmetz V.1 (09/04/2018)
     """
+    # TODO make the real ai
     orders = ''
 
     vessel_type = ('scout', 'warship', 'excavator-S', 'excavator-M', 'excavator-L')
@@ -1462,7 +1464,7 @@ def continue_game(player_estate):
     return True
 
 
-def check_bool(string):
+def str2bool(string):
     """
     If input string equal to True return True, False other wise.
 
@@ -1479,7 +1481,8 @@ def check_bool(string):
     Spec : Ryan Rennoir V.1 (15/04/2018)
     Impl : Ryan Rennoir V.1 (15/04/2018)
     """
-    if string == 'True':
+    string = string.lower()
+    if string == 'true':
         return True
 
     return False
@@ -1513,20 +1516,20 @@ def game():
     config = {'general': [int(general['case per move']), int(general['nb_AI']), int(general['starting_ore']),
                           int(general['base_hp']), max_round],
 
-              'scout': [int(scout['life']), int(scout['range']), int(scout['max ore']), check_bool(scout['lock']),
+              'scout': [int(scout['life']), int(scout['range']), int(scout['max ore']), str2bool(scout['lock']),
                         int(scout['attack']), int(scout['cost'])],
 
-              'warship': [int(warship['life']), int(warship['range']), int(warship['max ore']), check_bool(warship['lock']),
+              'warship': [int(warship['life']), int(warship['range']), int(warship['max ore']), str2bool(warship['lock']),
                           int(warship['attack']), int(warship['cost'])],
 
               'excavator-S': [int(excavator_s['life']), int(excavator_s['range']), int(excavator_s['max ore']),
-                              check_bool(excavator_l['lock']), int(excavator_s['attack']), int(excavator_s['cost'])],
+                              str2bool(excavator_l['lock']), int(excavator_s['attack']), int(excavator_s['cost'])],
 
               'excavator-M': [int(excavator_m['life']), int(excavator_m['range']), int(excavator_m['max ore']),
-                              check_bool(excavator_m['lock']), int(excavator_m['attack']), int(excavator_m['cost'])],
+                              str2bool(excavator_m['lock']), int(excavator_m['attack']), int(excavator_m['cost'])],
 
               'excavator-L': [int(excavator_l['life']), int(excavator_l['range']), int(excavator_l['max ore']),
-                              check_bool(excavator_l['lock']), int(excavator_l['attack']), int(excavator_l['cost'])]}
+                              str2bool(excavator_l['lock']), int(excavator_l['attack']), int(excavator_l['cost'])]}
 
     # Init the game loop
     data = create_data(config)
@@ -1556,13 +1559,13 @@ def game():
         if nb_ai == 2:
             command_p1 = ai(0, vessel_stats, environment_stats)
             command_p2 = ai(1, vessel_stats, environment_stats)
-            print('AI 1 say: ' + command_p1)
-            print('AI 2 say: ' + command_p2)
+            print('AI 1 say: %s' % command_p1)
+            print('AI 2 say: %s' % command_p2)
 
         elif nb_ai == 1:
             command_p1 = input('Player 1:')
             command_p2 = ai(1, vessel_stats, environment_stats)
-            print('AI 2 say: ' + command_p2)
+            print('AI say: %s' % command_p2)
         else:
             command_p1 = input('Player 1:')
             command_p2 = input('Player 2:')
