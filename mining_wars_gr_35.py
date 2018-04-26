@@ -908,35 +908,6 @@ def move(vessel_stats, vessel_position, final_coordinate, environment_stats, con
             final_coordinate[_player].pop(_vessel)
 
 
-def remove_vessel(vessel_stats, vessel_position, player_estate):
-    """
-    Check if there is vessels dead and delete them if yes.
-
-    Parameters:
-    -----------
-    vessel_stats: contain all stats of the vessels (list)
-    vessel_position: contain all position of the vessels (list)
-    player_estate: contain all of the information about the players (list)
-
-    Version:
-    --------
-    Spec: Ryan Rennoir V.1 (12/04/2018)
-    imp: Ryan Rennoir V.1 (12/04/2018)
-    """
-    vessels_to_remove = [[], []]
-
-    for player in range(2):
-        for vessels in vessel_stats[player]:
-
-            if vessel_stats[player][vessels][2] <= 0:
-                vessels_to_remove[player].append(vessels)
-
-        for _vessels in vessels_to_remove[player]:
-            del vessel_stats[player][_vessels]
-            del vessel_position[player][_vessels]
-            player_estate[player]['vessel'].remove(_vessels)
-
-
 def attack(player, attacker, coord, vessel_stats, vessel_position, player_estate, base_position, config):
     """
     Make the attack of a vessel on the targeted coordinates 
@@ -994,7 +965,18 @@ def attack(player, attacker, coord, vessel_stats, vessel_position, player_estate
                         vessel_stats[player][vessels][2] -= vessel_dmg
 
     # Check if there is vessels dead and delete them if yes
-    remove_vessel(vessel_stats, vessel_position, player_estate)
+    vessels_to_remove = [[], []]
+
+    for player in range(2):
+        for vessels in vessel_stats[player]:
+
+            if vessel_stats[player][vessels][2] <= 0:
+                vessels_to_remove[player].append(vessels)
+
+        for _vessels in vessels_to_remove[player]:
+            del vessel_stats[player][_vessels]
+            del vessel_position[player][_vessels]
+            player_estate[player]['vessel'].remove(_vessels)
 
 
 def get_ore(vessel_stats, player_estate, environment_stats, config):
@@ -1188,11 +1170,29 @@ def get_order(order, vessel_stats, player_estate, environment_stats, vessel_posi
                     player = split_orders.index(player_orders)
 
                     if vessel_name in vessel_stats[player]:
+                        state = vessel_stats[player][vessel_name][4]
 
                         if order == 'release':
-                            release(player, vessel_name, vessel_stats)
+
+                            # Check state
+                            if state == 'lock':
+
+                                vessel_stats[player][vessel_name][4] = 'release'
+
                         else:
-                            lock(player, vessel_name, vessel_stats, player_estate, asteroid_position)
+                            if state == 'release':
+                                lockable_object = False
+
+                                if player_estate[player]['base'] == vessel_stats[player][vessel_name][1]:
+                                    lockable_object = True
+
+                                else:
+                                    for asteroid in asteroid_position:
+                                        if asteroid == vessel_stats[player][vessel_name][1]:
+                                            lockable_object = True
+
+                                if lockable_object:
+                                    vessel_stats[player][vessel_name][4] = 'lock'
 
     # scroll through the orders of each player and execute each move order encountered (third turn phase - moves)
     for player_orders in split_orders:
@@ -1251,66 +1251,6 @@ def get_order(order, vessel_stats, player_estate, environment_stats, vessel_posi
                     if vessel_name in vessel_stats[player]:
                         attack(player, vessel_name, attack_coord, vessel_stats, vessel_position, player_estate,
                                base_position, config)
-
-
-def lock(player, vessel, vessel_stats, player_estate, asteroid_position):
-    """
-    Lock the excavator
-
-    Parameters:
-    -----------
-    player: player index for list 0 or 1 (int)
-    vessels: name of the vessel (str)
-    vessel_stat: contains the information about the vessels of the players (list)
-    player_estate : contains the ore_amount, the vessels and the base of each player (dic)
-    asteroid_position: contain all asteroid position (list)
-
-    Version:
-    --------
-    Spec: Ryan Rennoir V.1 (07/04/2018)
-    Impl: Ryan Rennoir V.1 (07/04/2018)
-    """
-    state = vessel_stats[player][vessel][4]
-
-    if state is None or state == 'lock':
-        return
-
-    else:
-        if not (player_estate[player]['base'] == vessel_stats[player][vessel][1]):
-
-            on_asteroid = False
-
-            for asteroid in asteroid_position:
-                if asteroid == vessel_stats[player][vessel][1]:
-                    on_asteroid = True
-
-            if not on_asteroid:
-                return
-
-        vessel_stats[player][vessel][4] = 'lock'
-
-
-def release(player, vessel, vessel_stats):
-    """
-    Release the excavator
-
-    Parameters:
-    -----------
-    player: player index for list 0 or 1 (int)
-    vessels: name of the vessel (str)
-    vessel_stat : contains the information about the vessels of the players (list)
-
-    Version:
-    --------
-    Spec: Ryan Rennoir V.1 (07/04/2018)
-    Impl: Ryan Rennoir V.1 (07/04/2018)
-    """
-    state = vessel_stats[player][vessel][4]
-
-    if state is None or state == 'release':
-        return
-
-    vessel_stats[player][vessel][4] = 'release'
 
 
 def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate, config):
@@ -1512,62 +1452,24 @@ def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate,
                                 # Go to base
                                 order_excavator_ia += '%s:@%s-%s' % excavator_name, base[0], base[1]
 
+                elif ore == 0:
+                    target_asteroid = []
+                    for asteroid in environment_stats['asteroid']:
+                        v_center = excavator[1]
+                        coord_asteroid = asteroid[0]
+
+                        # Chose a asteroid with ore
+                        if asteroid[1] != 0:
+
+                            asteroid_index = environment_stats['asteroid'].index(asteroid)
+                            # Compute the distance
+                            distance = abs(coord_asteroid[0] - v_center[0]) + abs(coord_asteroid[1] - v_center[1])
+
+                            target_asteroid.append([asteroid_index, distance])
+
                 orders += order_excavator_ia
 
     return orders
-
-
-def continue_game(player_estate):
-    """
-    Check if the game is ended or not 
-    
-    Parameters:
-    -----------
-    player_estate: contains the ore_amount, the vessels and the base of each player (list)
-    
-    Return:
-    -------
-    Result: True if the game must continue, or False if it is ended (bool)
-    
-    Version:
-    --------
-    Spec: Arnaud Schmetz V.1 (09/04/2018)
-    Impl: Ryan Rennoir V.1 (11/04/2018)
-    """
-    for player in player_estate:
-
-        base = player['base_hp']
-        ore = player['ore_amount']
-        vessel = player['vessel']
-
-        if ore == 0 and vessel == [] or base <= 0:
-            return False
-
-    return True
-
-
-def str2bool(string):
-    """
-    If input string equal to True return True, False other wise.
-
-    Parameters:
-    -----------
-    string: String to test (str)
-
-    Return:
-    -------
-    Result: True or False (bool)
-
-    Version:
-    --------
-    Spec : Ryan Rennoir V.1 (15/04/2018)
-    Impl : Ryan Rennoir V.1 (15/04/2018)
-    """
-    string = string.lower()
-    if string == 'true':
-        return True
-
-    return False
 
 
 def game(path_config, path_game_config):
@@ -1679,14 +1581,42 @@ def game(path_config, path_game_config):
         ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid_position, base_position)
 
         # Check if the game end
-        game_loop = continue_game(player_estate)
+        for player in player_estate:
 
-        if config['general'][4] == _round:
-            game_loop = False
+            base = player['base_hp']
+            ore = player['ore_amount']
+            vessel = player['vessel']
+
+            if ore == 0 and vessel == [] or base <= 0 or config['general'][4] == _round:
+                game_loop = False
 
         _round += 1
 
     print('Game over')
+
+
+def str2bool(string):
+    """
+    If input string equal to True return True, False other wise.
+
+    Parameters:
+    -----------
+    string: String to test (str)
+
+    Return:
+    -------
+    Result: True or False (bool)
+
+    Version:
+    --------
+    Spec : Ryan Rennoir V.1 (15/04/2018)
+    Impl : Ryan Rennoir V.1 (15/04/2018)
+    """
+    string = string.lower()
+    if string == 'true':
+        return True
+
+    return False
 
 
 game('./config.ini', './game_config.mw')

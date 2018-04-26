@@ -199,6 +199,9 @@ def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate,
                             else:
                                 # Go to base
                                 order_excavator_ia += '%s:@%s-%s' % excavator_name, base[0], base[1]
+                elif ore == 0:
+                    for asteroid in environment_stats['asteriod']:
+
 
                 orders += order_excavator_ia
 
