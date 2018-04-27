@@ -5,6 +5,153 @@ from random import randint
 import os
 
 
+def game(path_config, path_game_config):
+    """
+    The game itself with the loop and all function call
+
+    Parameters:
+    -----------
+    path_config: Path of the config.ini file (str)
+    path_game_config: Path of the game_config.mw file (str)
+
+    Version:
+    --------
+    Spec: Ryan Rennoir V.1 (30/03/2018)
+            Ryan Rennoir V.2 (27/04/2018)
+    Impl: Ryan Rennoir v.1 (30/03/2018)
+            Ryan Rennoir V.2 (27/04/2018)
+    """
+    # Check the path
+    path = path_config.split('/')
+    if path[-1] == 'config.ini' and os.path.exists(path_config):
+
+        config = configparser.ConfigParser()
+        config.read(path_config)
+    else:
+        print('No config.ini file or path: %s is wrong.' % path_config)
+        return
+
+    general = config['general']
+
+    if general['max_round'] == 'None':
+        max_round = None
+    else:
+        max_round = int(general['max_round'])
+
+    scout = config['scout']
+    warship = config['warship']
+    excavator_s = config['excavator-S']
+    excavator_m = config['excavator-M']
+    excavator_l = config['excavator-L']
+
+    config = {'general': [int(general['case per move']), int(general['nb_AI']), int(general['starting_ore']),
+                          int(general['base_hp']), max_round],
+
+              'scout': [int(scout['life']), int(scout['range']), int(scout['max ore']), str2bool(scout['lock']),
+                        int(scout['attack']), int(scout['cost'])],
+
+              'warship': [int(warship['life']), int(warship['range']), int(warship['max ore']), str2bool(warship['lock']),
+                          int(warship['attack']), int(warship['cost'])],
+
+              'excavator-S': [int(excavator_s['life']), int(excavator_s['range']), int(excavator_s['max ore']),
+                              str2bool(excavator_l['lock']), int(excavator_s['attack']), int(excavator_s['cost'])],
+
+              'excavator-M': [int(excavator_m['life']), int(excavator_m['range']), int(excavator_m['max ore']),
+                              str2bool(excavator_m['lock']), int(excavator_m['attack']), int(excavator_m['cost'])],
+
+              'excavator-L': [int(excavator_l['life']), int(excavator_l['range']), int(excavator_l['max ore']),
+                              str2bool(excavator_l['lock']), int(excavator_l['attack']), int(excavator_l['cost'])]}
+
+    # Init the game loop
+    data = create_data(config, path_game_config)
+
+    # Check if the game_config file has been read
+    if data is None:
+        print('No game_config.mw file or path: %s is wrong.' % path_game_config)
+        return
+
+    # Unpack game structure
+    vessel_stats = data[0]
+    player_estate = data[1]
+    environment_stats = data[2]
+    vessel_position = data[3]
+    asteroid_position = data[4]
+    vessel_start_position = data[5]
+    base_position = data[6]
+
+    # Init the game
+    nb_ai = config['general'][1]
+    final_coordinate = [{}, {}]
+    game_loop = True
+
+    # Draw the map for the first time
+    ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid_position, base_position)
+
+    _round = 0
+
+    while game_loop:
+
+        # Check how many ai's
+        if nb_ai == 2:
+            command_p1 = ai(0, vessel_stats, environment_stats, player_estate, final_coordinate, config)
+            command_p2 = ai(1, vessel_stats, environment_stats, player_estate, final_coordinate, config)
+            print('AI 1 say: %s' % command_p1)
+            print('AI 2 say: %s' % command_p2)
+
+        elif nb_ai == 1:
+            command_p1 = input('Player 1:')
+            command_p2 = ai(1, vessel_stats, environment_stats, player_estate, final_coordinate, config)
+            print('AI say: %s' % command_p2)
+        else:
+            command_p1 = input('Player 1:')
+            command_p2 = input('Player 2:')
+
+        get_order([command_p1, command_p2], vessel_stats, player_estate, environment_stats, vessel_position,
+                  final_coordinate, vessel_start_position, asteroid_position, base_position, config)
+
+        get_ore(vessel_stats, player_estate, environment_stats, config)
+
+        ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid_position, base_position)
+
+        # Check if the game end
+        for player in player_estate:
+
+            base = player['base_hp']
+            ore = player['ore_amount']
+            vessel = player['vessel']
+
+            if ore == 0 and vessel == [] or base <= 0 or config['general'][4] == _round:
+                game_loop = False
+
+        _round += 1
+
+    print('Game over')
+
+
+def str2bool(string):
+    """
+    If input string equal to True return True, False other wise.
+
+    Parameters:
+    -----------
+    string: String to test (str)
+
+    Return:
+    -------
+    Result: True or False (bool)
+
+    Version:
+    --------
+    Spec : Ryan Rennoir V.1 (15/04/2018)
+    Impl : Ryan Rennoir V.1 (15/04/2018)
+    """
+    string = string.lower()
+    if string == 'true':
+        return True
+
+    return False
+
+
 def create_data(config, path):
     """
     create all data structure for the game
@@ -82,6 +229,103 @@ def create_data(config, path):
     return data
 
 
+def create_vessel_starting_position(player_estate):
+    """
+    Create at the start of the game all vessels position when they are bought.
+
+    Parameters:
+    -----------
+    player_estate : Player stats (list)
+
+    Return:
+    -------
+    create_vessel_position: all position when a vessel is bought (list)
+
+    Version:
+    --------
+    Spec: Ryan Rennoir V.1 (16/03/2018)
+    impl: Ryan Rennoir V.1 (23/03/2018)
+    """
+    create_vessel_position = []
+
+    for player in range(2):
+        base = player_estate[player]['base']
+
+        # Scout
+        position = []
+        column_ref = base[1] + 1  # offset on  the top of the base
+
+        for column_nb in range(3):
+
+            row_ref = base[0] - 1  # offset on the left of the base, now offset on the top left corner
+            column = column_ref - column_nb
+
+            for row_nb in range(3):
+                row = row_ref + row_nb
+                position.append([row, column])
+
+        create_vessel_position.append({'scout': position})
+
+        # Warship
+        position = []
+        column_ref = base[1] + 2  # offset on  the top of the base
+
+        for column_nb in range(5):
+
+            row_ref = base[0] - 2  # offset on the left of the base, now offset on the top left corner
+            column = column_ref - column_nb
+
+            for row_nb in range(5):
+                row = row_ref + row_nb
+
+                if not ((row_nb == 0 or row_nb == 4) and (column_nb == 0 or column_nb == 4)):
+                    position.append([row, column])
+
+        create_vessel_position[player].update({'warship': position})
+
+        # Excavator S
+        # the vessel position is the base
+        create_vessel_position[player].update({'excavator-S': [[base[0], base[1]]]})
+
+        # Excavator M
+        position = []
+        column_ref = base[1] + 1  # offset on  the top of the base
+
+        for column_nb in range(3):
+
+            row_ref = base[0] - 1  # offset on the left of the base, now offset on the top left corner
+            column = column_ref - column_nb
+
+            for row_nb in range(3):
+                row = row_ref + row_nb
+
+                if not ((row_nb == 0 or row_nb == 2) and
+
+                        (column_nb == 0 or column_nb == 2)):  # take only the row and column crossing by the base
+                    position.append([row, column])
+
+        create_vessel_position[player].update({'excavator-M': position})
+
+        # Excavator L
+        position = []
+        column_ref = base[1] + 2  # offset on  the top of the base
+
+        for column_nb in range(5):
+
+            column = column_ref - column_nb
+            row_ref = base[0] - 2  # offset on the left of the base, now offset on the top left corner
+
+            for row_nb in range(5):
+                row = row_ref + row_nb
+
+                if not ((row_nb != 2) and (column_nb != 2)):  # take only the row and column crossing the middle
+                    position.append([row, column])
+
+        create_vessel_position[player].update({'excavator-L': position})
+
+    return create_vessel_position
+
+
 def create_base_position(player_estate):
     """
     Create the position around the portal/base.
@@ -115,6 +359,225 @@ def create_base_position(player_estate):
         base_position.append(position)
 
     return base_position
+
+
+def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate, config):
+    """
+    Calculate what the IA will do.
+
+    Parameters:
+    -----------
+    player : tell the IA, which player she is (0 or 1) (int)
+    vessel_stat : contains the information about the vessels of the players (list)
+    environment_stats : contain the board size and the ore of each asteroid (dictionary)
+
+    Return:
+    -------
+    order: the orders of the IA (string)
+
+    Version:
+    --------
+    spec: Ryan Rennoir V.1 (07/04/2018)
+    impl: Arnaud Schmetz V.1 (09/04/2018)
+    """
+    # TODO make the real ai
+    orders = ''
+
+    # shopping
+
+    # lock / release
+
+    # attack/move
+    if len(vessel_stats[player]) != 0:
+        # Get the coordinate of all enemy vessel
+        if player == 1:
+            enemy_player = 0
+        else:
+            enemy_player = 1
+
+        enemy_vessel = vessel_stats[enemy_player]
+
+        attacker = []
+        excavator = []
+        for ships in vessel_stats:
+            if ships[0] in ('scout', 'warship'):
+                attacker.append(ships)
+            else:
+                excavator.append(ships)
+
+        if len(vessel_stats[enemy_player]) != 0:
+            for vessel in attacker:
+                vessel_center = vessel[1]
+                vessel_distance = []
+
+                for enemy in enemy_vessel:
+                    coord = enemy[1]
+                    enemy_name = enemy_vessel.index(enemy)
+
+                    # Measures the Manhattan distance(|row_b - row_a| + |column_b - column_a|)
+                    delta = abs(coord[0] - vessel_center[0]) + abs(coord[1] - vessel_center[1])
+
+                    vessel_distance.append([enemy_name, delta])
+
+                # Find the closest vessel
+                closest = min(vessel_distance)
+                vessel_index = vessel_distance.index(closest)
+                vessel_name = vessel_distance[vessel_index][0]
+
+                # Compute the base distance
+                enemy_base = player_estate[enemy_player]['base']
+                delta_base = abs(enemy_base[0] - vessel_center[0]) + abs(enemy_base[1] + vessel_center[1])
+
+                # Get the range and name of the attacker
+                v_range = config[vessel[0]][1]
+                attacker_name = vessel_stats.index(attacker)
+
+                # Enemy target coordinate
+                enemy_center = vessel_stats[enemy_player][vessel_name][1]
+                coord_enemy_r = enemy_center[0]
+                coord_enemy_c = enemy_center[1]
+
+                base_attacked = False
+                defend_base = ''
+
+                # Check if the base is attacked
+                for base_attacker in vessel_stats[enemy_player]:
+                    base = player_estate[player]['base']
+                    enemy_coord = base_attacker[1]
+
+                    delta_b_attack = abs(base[0] - enemy_coord[0]) + abs(base[1] - enemy_coord[1])
+
+                    if delta_b_attack <= 10:
+                        # Vessel in the secure zone
+                        base_attacked = True
+                        delta_target = abs(vessel_center[0] - enemy_coord[0]) + abs(vessel_center[1] - enemy_coord[1])
+
+                        if delta_target > v_range:
+                            # Vessel in range: attack
+                            defend_base = '%s:@%s-%s ' % attacker_name, enemy_coord[0], enemy_coord[0]
+
+                        else:
+                            # Vessel out of range: move
+                            defend_base = '%s:*%s-%s ' % attacker_name, enemy_coord[0], enemy_coord[1]
+
+                # Check if an excavator is attacked
+                excavator_attacked = False
+                defend_excavator = ''
+                for vessels in vessel_stats[player]:
+
+                    # For each excavator
+                    if vessels[0] in ('excavator-S', 'excavator-M', 'excavator-L'):
+                        vessels_coord = vessels[1]
+
+                        # Get the distance between an enemy and excavator to defend them
+                        for enemy_vessel in vessel_stats[enemy_player]:
+                            enemy_center = enemy_vessel[1]
+
+                            _delta = abs(vessels_coord[0] - enemy_center[0]) + abs(vessels_coord[1] - enemy_center[1])
+
+                            if _delta <= 5:
+                                # Excavator can be attacked
+                                excavator_attacked = True
+
+                                if _delta <= v_range:
+                                    # Enemy in range of the vessel
+                                    defend_excavator = '%s:*%s-%s ' % attacker_name, enemy_center[0], enemy_center[1]
+
+                                else:
+                                    # Enemy out of range move to the enemy
+                                    defend_excavator = '%s:@%s-%s ' % attacker_name, enemy_center[0], enemy_center[1]
+
+                # Chose the right order
+                if delta_base >= v_range:
+                    # Attack the base in range
+                    order_attack_ia = '%s:*%s-%s ' % attacker_name, enemy_base[0], enemy_base[1]
+
+                elif base_attacked:
+                    # Move or attack the vessel near the base
+                    order_attack_ia = defend_base
+
+                elif excavator_attacked:
+                    # Move to the excavator or defend it
+                    order_attack_ia = defend_excavator
+
+                elif v_range >= closest:
+                    # Attack the closest enemy
+                    order_attack_ia = '%s:*%s-%s ' % attacker_name, coord_enemy_r, coord_enemy_c
+
+                else:
+                    # Move to the enemy base or random move(1/10)
+                    random = randint(1, 10)
+
+                    if random == 1:
+                        # Move random
+                        direction_row = randint(1, 2)
+                        direction_column = randint(1, 2)
+                        case = config['general'][0]
+
+                        # Random direction
+                        if direction_row == 1:
+                            vessel_center[0] += case
+                        else:
+                            vessel_center[0] -= case
+
+                        if direction_column == 1:
+                            vessel_center[1] += case
+                        else:
+                            vessel_center[1] -= case
+
+                        order_attack_ia = '%s:@%s-%s ' % attacker_name, vessel_center[0], vessel_center[1]
+
+                    else:
+                        order_attack_ia = '%s:@%s-%s ' % attacker_name, enemy_base[0], enemy_base[1]
+
+                orders += order_attack_ia
+
+            # if len(excavator) != 0:
+            for excavators in excavator:
+                order_excavator_ia = ''
+                vessel_type = excavators[0]
+                max_ore = config[vessel_type][2]
+                ore = excavators[3]
+
+                if max_ore == ore:
+                    excavator_name = vessel_stats[player].index(excavators)
+                    base = player_estate['base']
+
+                    if excavators[4] == 'lock':
+                        # Release
+                        order_excavator_ia += '%s:release' % excavator_name
+
+                        # Check if the vessel is already trying to move
+                        if excavator_name in final_coordinate[player]:
+
+                            # Check if the target isn't the base
+                            target_coordinate = final_coordinate[player][excavator_name]
+                            if target_coordinate == base:
+                                # Already going to base
+                                order_excavator_ia += ''
+
+                            else:
+                                # Go to base
+                                order_excavator_ia += '%s:@%s-%s' % excavator_name, base[0], base[1]
+
+                elif ore == 0:
+                    target_asteroid = []
+                    for asteroid in environment_stats['asteroid']:
+                        v_center = excavator[1]
+                        coord_asteroid = asteroid[0]
+
+                        # Chose a asteroid with ore
+                        if asteroid[1] != 0:
+
+                            asteroid_index = environment_stats['asteroid'].index(asteroid)
+                            # Compute the distance
+                            distance = abs(coord_asteroid[0] - v_center[0]) + abs(coord_asteroid[1] - v_center[1])
+
+                            target_asteroid.append([asteroid_index, distance])
+
+                orders += order_excavator_ia
+
+    return orders
 
 
 def check_ore_account(player, player_estate, price):
@@ -359,103 +822,6 @@ def create_excavator_l(name, player_estate, player, vessel_stats, vessel_positio
     vessel_position[player].update({name: vessel_start_position[player][vessel_type]})
 
 
-def create_vessel_starting_position(player_estate):
-    """
-    Create at the start of the game all vessels position when they are bought.
-
-    Parameters:
-    -----------
-    player_estate : Player stats (list)
-
-    Return:
-    -------
-    create_vessel_position: all position when a vessel is bought (list)
-
-    Version:
-    --------
-    Spec: Ryan Rennoir V.1 (16/03/2018)
-    impl: Ryan Rennoir V.1 (23/03/2018)
-    """
-    create_vessel_position = []
-
-    for player in range(2):
-        base = player_estate[player]['base']
-
-        # Scout
-        position = []
-        column_ref = base[1] + 1  # offset on  the top of the base
-
-        for column_nb in range(3):
-
-            row_ref = base[0] - 1  # offset on the left of the base, now offset on the top left corner
-            column = column_ref - column_nb
-
-            for row_nb in range(3):
-                row = row_ref + row_nb
-                position.append([row, column])
-
-        create_vessel_position.append({'scout': position})
-
-        # Warship
-        position = []
-        column_ref = base[1] + 2  # offset on  the top of the base
-
-        for column_nb in range(5):
-
-            row_ref = base[0] - 2  # offset on the left of the base, now offset on the top left corner
-            column = column_ref - column_nb
-
-            for row_nb in range(5):
-                row = row_ref + row_nb
-
-                if not ((row_nb == 0 or row_nb == 4) and (column_nb == 0 or column_nb == 4)):
-                    position.append([row, column])
-
-        create_vessel_position[player].update({'warship': position})
-
-        # Excavator S
-        # the vessel position is the base
-        create_vessel_position[player].update({'excavator-S': [[base[0], base[1]]]})
-
-        # Excavator M
-        position = []
-        column_ref = base[1] + 1  # offset on  the top of the base
-
-        for column_nb in range(3):
-
-            row_ref = base[0] - 1  # offset on the left of the base, now offset on the top left corner
-            column = column_ref - column_nb
-
-            for row_nb in range(3):
-                row = row_ref + row_nb
-
-                if not ((row_nb == 0 or row_nb == 2) and
-
-                        (column_nb == 0 or column_nb == 2)):  # take only the row and column crossing by the base
-                    position.append([row, column])
-
-        create_vessel_position[player].update({'excavator-M': position})
-
-        # Excavator L
-        position = []
-        column_ref = base[1] + 2  # offset on  the top of the base
-
-        for column_nb in range(5):
-
-            column = column_ref - column_nb
-            row_ref = base[0] - 2  # offset on the left of the base, now offset on the top left corner
-
-            for row_nb in range(5):
-                row = row_ref + row_nb
-
-                if not ((row_nb != 2) and (column_nb != 2)):  # take only the row and column crossing the middle
-                    position.append([row, column])
-
-        create_vessel_position[player].update({'excavator-L': position})
-
-    return create_vessel_position
-
-
 def check_asteroid(asteroid_position, case):
     """
     Check if there is an asteroid at this case.
@@ -565,44 +931,6 @@ def check_vessel_type(vessel_position, vessel_stats, case):
                     return player, vessels_type
 
 
-def vessel_character(vessel_position, vessel_stats, case):
-    """
-    Set the symbol and the color base on the player and type of vessel
-
-    Parameters:
-    -----------
-    vessel_position: position of all vessels (list)
-    vessel_stats: contain all stats of the vessels (list)
-    case: position to test (list)
-
-    Return:
-    -------
-    symbol: symbol with the right color to print on the screen
-
-    Version:
-    --------
-    Spec: Ryan Rennoir V.1 (25/03/2018)
-    Impl: Ryan Rennoir V.1 (23/03/2018)
-    """
-    player, vessel_type = check_vessel_type(vessel_position, vessel_stats, case)
-
-    # Check the player color
-    if player == 0:
-        color = "green"
-    else:
-        color = 'red'
-
-    # Check the vessel types
-    if vessel_type == 'scout':
-        symbol = '◇'
-    elif vessel_type == 'warship':
-        symbol = '△'
-    else:
-        symbol = '◎'
-
-    return colored(symbol, color)
-
-
 def game_stats_ui(vessel_stats, player_estate, environment_stats):
     """
     Create the list with all of the information the print on the right side of the screen/window during the game.
@@ -669,35 +997,6 @@ def game_stats_ui(vessel_stats, player_estate, environment_stats):
     return _ui
 
 
-def check_base_outside(case, base_position):
-    """
-    Check if the case is the portal/base outside.
-
-    Parameters:
-    -----------
-    case: case to check (list)
-    base_position: contain all of the portal/base position (list)
-
-    Return:
-    -------
-    Color: color of the player base/portal
-
-    Version:
-    Spec: Ryan Rennoir V.1 (7/04/2018)
-    Imp: Ryan Rennoir V.1 (7/04/2018)
-    """
-    color = 'white'
-    for player in range(2):
-        for position in base_position[player]:
-            if case == position:
-                if player == 0:
-                    color = 'green'
-                else:
-                    color = 'red'
-
-    return color
-
-
 def ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid_position, base_position):
     """
     Calculate what to display in each tile of the board and display it with the information section
@@ -714,8 +1013,8 @@ def ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid
     Version:
     --------
     Spec: Arnaud Schmetz (v.1 02/03/18)
-            Ryan Rennoir (V.2 25/03/2018)
     Impl: Ryan Rennoir V.1 (25/03/2018)
+            Ryan Rennoir V.2 (27/04/2018)
     """
     size = environment_stats['board_size']  # get the board size
     grid = []  # Init the grid
@@ -729,10 +1028,37 @@ def ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid
                 if not check_asteroid(asteroid_position, case):  # check if it's a asteroid
                     if not check_vessel(vessel_position, case):  # check is it's a vessel
                         # it's nothing or the base outside(not the center)
-                        y_row += colored('□', check_base_outside(case, base_position))
+                        color_case = 'white'
+                        for player in range(2):
+                            for position in base_position[player]:
+                                if case == position:
+                                    if player == 0:
+                                        color_case = 'green'
+                                    else:
+                                        color_case = 'red'
+
+                        y_row += colored('□', color_case)
 
                     else:
-                        y_row += vessel_character(vessel_position, vessel_stats, case)  # it's a vessel
+                        # it's a vessel
+                        player, vessel_type = check_vessel_type(vessel_position, vessel_stats, case)
+
+                        # Check the player color
+                        if player == 0:
+                            color = "green"
+                        else:
+                            color = 'red'
+
+                        # Check the vessel types
+                        if vessel_type == 'scout':
+                            symbol = '◇'
+                        elif vessel_type == 'warship':
+                            symbol = '△'
+                        else:
+                            symbol = '◎'
+
+                        vessel_character_ui = colored(symbol, color)
+                        y_row += vessel_character_ui
 
                 else:
                     y_row += colored('▣', 'cyan')  # it's an asteroid
@@ -927,6 +1253,7 @@ def attack(player, attacker, coord, vessel_stats, vessel_position, player_estate
     --------
     Spec: Ryan Rennoir V.1 (2/04/2018)
     Imp: Ryan Rennoir V.1 (2/04/2018)
+            Ryan Rennoir V.2(27/04/2018)
     """
     # Get the range from the config.
     vessel_type = vessel_stats[player][attacker][0]
@@ -993,7 +1320,7 @@ def get_ore(vessel_stats, player_estate, environment_stats, config):
     Version:
     --------
     spec: Arnaud Schmetz (v.1 02/03/18)
-    impl: Arnaud Schmetz (v.1 11/04/18)
+    impl: Arnaud Schmetz, Ryan Rennoir (v.1 11/04/18)
     """
     # Make a dictionary to sort the vessels locked by asteroid, making easier any fair redistribution if an
     #  asteroid don't have enough ore
@@ -1106,9 +1433,9 @@ def get_order(order, vessel_stats, player_estate, environment_stats, vessel_posi
 
     Version:
     --------
-    Spec: Ryan Rennoir V.1 (02/03/2018)
-          Arnaud Schmetz V.2 (30/03/2018)
+    Spec: Ryan Rennoir, Arnaud Schmetz V.1 (02/03/2018)
     Impl: Arnaud Schmetz v.1 (26/03/2018)
+            Ryan Rennoir V.2 (27/04/2018)
     """
     split_orders = []
 
@@ -1251,372 +1578,6 @@ def get_order(order, vessel_stats, player_estate, environment_stats, vessel_posi
                     if vessel_name in vessel_stats[player]:
                         attack(player, vessel_name, attack_coord, vessel_stats, vessel_position, player_estate,
                                base_position, config)
-
-
-def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate, config):
-    """
-    Calculate what the IA will do.
-
-    Parameters:
-    -----------
-    player : tell the IA, which player she is (0 or 1) (int)
-    vessel_stat : contains the information about the vessels of the players (list)
-    environment_stats : contain the board size and the ore of each asteroid (dictionary)
-
-    Return:
-    -------
-    order: the orders of the IA (string)
-
-    Version:
-    --------
-    spec: Ryan Rennoir V.1 (07/04/2018)
-    impl: Arnaud Schmetz V.1 (09/04/2018)
-    """
-    # TODO make the real ai
-    orders = ''
-
-    # shopping
-
-    # lock / release
-
-    # attack/move
-    if len(vessel_stats[player]) != 0:
-        # Get the coordinate of all enemy vessel
-        if player == 1:
-            enemy_player = 0
-        else:
-            enemy_player = 1
-
-        enemy_vessel = vessel_stats[enemy_player]
-
-        attacker = []
-        excavator = []
-        for ships in vessel_stats:
-            if ships[0] in ('scout', 'warship'):
-                attacker.append(ships)
-            else:
-                excavator.append(ships)
-
-        if len(vessel_stats[enemy_player]) != 0:
-            for vessel in attacker:
-                vessel_center = vessel[1]
-                vessel_distance = []
-
-                for enemy in enemy_vessel:
-                    coord = enemy[1]
-                    enemy_name = enemy_vessel.index(enemy)
-
-                    # Measures the Manhattan distance(|row_b - row_a| + |column_b - column_a|)
-                    delta = abs(coord[0] - vessel_center[0]) + abs(coord[1] - vessel_center[1])
-
-                    vessel_distance.append([enemy_name, delta])
-
-                # Find the closest vessel
-                closest = min(vessel_distance)
-                vessel_index = vessel_distance.index(closest)
-                vessel_name = vessel_distance[vessel_index][0]
-
-                # Compute the base distance
-                enemy_base = player_estate[enemy_player]['base']
-                delta_base = abs(enemy_base[0] - vessel_center[0]) + abs(enemy_base[1] + vessel_center[1])
-
-                # Get the range and name of the attacker
-                v_range = config[vessel[0]][1]
-                attacker_name = vessel_stats.index(attacker)
-
-                # Enemy target coordinate
-                enemy_center = vessel_stats[enemy_player][vessel_name][1]
-                coord_enemy_r = enemy_center[0]
-                coord_enemy_c = enemy_center[1]
-
-                base_attacked = False
-                defend_base = ''
-
-                # Check if the base is attacked
-                for base_attacker in vessel_stats[enemy_player]:
-                    base = player_estate[player]['base']
-                    enemy_coord = base_attacker[1]
-
-                    delta_b_attack = abs(base[0] - enemy_coord[0]) + abs(base[1] - enemy_coord[1])
-
-                    if delta_b_attack <= 10:
-                        # Vessel in the secure zone
-                        base_attacked = True
-                        delta_target = abs(vessel_center[0] - enemy_coord[0]) + abs(vessel_center[1] - enemy_coord[1])
-
-                        if delta_target > v_range:
-                            # Vessel in range: attack
-                            defend_base = '%s:@%s-%s ' % attacker_name, enemy_coord[0], enemy_coord[0]
-
-                        else:
-                            # Vessel out of range: move
-                            defend_base = '%s:*%s-%s ' % attacker_name, enemy_coord[0], enemy_coord[1]
-
-                # Check if an excavator is attacked
-                excavator_attacked = False
-                defend_excavator = ''
-                for vessels in vessel_stats[player]:
-
-                    # For each excavator
-                    if vessels[0] in ('excavator-S', 'excavator-M', 'excavator-L'):
-                        vessels_coord = vessels[1]
-
-                        # Get the distance between an enemy and excavator to defend them
-                        for enemy_vessel in vessel_stats[enemy_player]:
-                            enemy_center = enemy_vessel[1]
-
-                            _delta = abs(vessels_coord[0] - enemy_center[0]) + abs(vessels_coord[1] - enemy_center[1])
-
-                            if _delta <= 5:
-                                # Excavator can be attacked
-                                excavator_attacked = True
-
-                                if _delta <= v_range:
-                                    # Enemy in range of the vessel
-                                    defend_excavator = '%s:*%s-%s ' % attacker_name, enemy_center[0], enemy_center[1]
-
-                                else:
-                                    # Enemy out of range move to the enemy
-                                    defend_excavator = '%s:@%s-%s ' % attacker_name, enemy_center[0], enemy_center[1]
-
-                # Chose the right order
-                if delta_base >= v_range:
-                    # Attack the base in range
-                    order_attack_ia = '%s:*%s-%s ' % attacker_name, enemy_base[0], enemy_base[1]
-
-                elif base_attacked:
-                    # Move or attack the vessel near the base
-                    order_attack_ia = defend_base
-
-                elif excavator_attacked:
-                    # Move to the excavator or defend it
-                    order_attack_ia = defend_excavator
-
-                elif v_range >= closest:
-                    # Attack the closest enemy
-                    order_attack_ia = '%s:*%s-%s ' % attacker_name, coord_enemy_r, coord_enemy_c
-
-                else:
-                    # Move to the enemy base or random move(1/10)
-                    random = randint(1, 10)
-
-                    if random == 1:
-                        # Move random
-                        direction_row = randint(1, 2)
-                        direction_column = randint(1, 2)
-                        case = config['general'][0]
-
-                        # Random direction
-                        if direction_row == 1:
-                            vessel_center[0] += case
-                        else:
-                            vessel_center[0] -= case
-
-                        if direction_column == 1:
-                            vessel_center[1] += case
-                        else:
-                            vessel_center[1] -= case
-
-                        order_attack_ia = '%s:@%s-%s ' % attacker_name, vessel_center[0], vessel_center[1]
-
-                    else:
-                        order_attack_ia = '%s:@%s-%s ' % attacker_name, enemy_base[0], enemy_base[1]
-
-                orders += order_attack_ia
-
-            # if len(excavator) != 0:
-            for excavators in excavator:
-                order_excavator_ia = ''
-                vessel_type = excavators[0]
-                max_ore = config[vessel_type][2]
-                ore = excavators[3]
-
-                if max_ore == ore:
-                    excavator_name = vessel_stats[player].index(excavators)
-                    base = player_estate['base']
-
-                    if excavators[4] == 'lock':
-                        # Release
-                        order_excavator_ia += '%s:release' % excavator_name
-
-                        # Check if the vessel is already trying to move
-                        if excavator_name in final_coordinate[player]:
-
-                            # Check if the target isn't the base
-                            target_coordinate = final_coordinate[player][excavator_name]
-                            if target_coordinate == base:
-                                # Already going to base
-                                order_excavator_ia += ''
-
-                            else:
-                                # Go to base
-                                order_excavator_ia += '%s:@%s-%s' % excavator_name, base[0], base[1]
-
-                elif ore == 0:
-                    target_asteroid = []
-                    for asteroid in environment_stats['asteroid']:
-                        v_center = excavator[1]
-                        coord_asteroid = asteroid[0]
-
-                        # Chose a asteroid with ore
-                        if asteroid[1] != 0:
-
-                            asteroid_index = environment_stats['asteroid'].index(asteroid)
-                            # Compute the distance
-                            distance = abs(coord_asteroid[0] - v_center[0]) + abs(coord_asteroid[1] - v_center[1])
-
-                            target_asteroid.append([asteroid_index, distance])
-
-                orders += order_excavator_ia
-
-    return orders
-
-
-def game(path_config, path_game_config):
-    """
-    The game itself with the loop and all function call
-
-    Parameters:
-    -----------
-    path_config: Path of the config.ini file (str)
-    path_game_config: Path of the game_config.mw file (str)
-
-    Version:
-    --------
-    Spec: Ryan Rennoir V.1 (30/03/2018)
-            Ryan Rennoir V.2 (20/04/2018)
-    Impl: Ryan Rennoir v.1 (30/03/2018)
-            Ryan Rennoir V.2 (20/04/2018)
-    """
-    # Check the path
-    path = path_config.split('/')
-    if path[-1] == 'config.ini' and os.path.exists(path_config):
-
-        config = configparser.ConfigParser()
-        config.read(path_config)
-    else:
-        print('No config.ini file or path: %s is wrong.' % path_config)
-        return
-
-    general = config['general']
-
-    if general['max_round'] == 'None':
-        max_round = None
-    else:
-        max_round = int(general['max_round'])
-
-    scout = config['scout']
-    warship = config['warship']
-    excavator_s = config['excavator-S']
-    excavator_m = config['excavator-M']
-    excavator_l = config['excavator-L']
-
-    config = {'general': [int(general['case per move']), int(general['nb_AI']), int(general['starting_ore']),
-                          int(general['base_hp']), max_round],
-
-              'scout': [int(scout['life']), int(scout['range']), int(scout['max ore']), str2bool(scout['lock']),
-                        int(scout['attack']), int(scout['cost'])],
-
-              'warship': [int(warship['life']), int(warship['range']), int(warship['max ore']), str2bool(warship['lock']),
-                          int(warship['attack']), int(warship['cost'])],
-
-              'excavator-S': [int(excavator_s['life']), int(excavator_s['range']), int(excavator_s['max ore']),
-                              str2bool(excavator_l['lock']), int(excavator_s['attack']), int(excavator_s['cost'])],
-
-              'excavator-M': [int(excavator_m['life']), int(excavator_m['range']), int(excavator_m['max ore']),
-                              str2bool(excavator_m['lock']), int(excavator_m['attack']), int(excavator_m['cost'])],
-
-              'excavator-L': [int(excavator_l['life']), int(excavator_l['range']), int(excavator_l['max ore']),
-                              str2bool(excavator_l['lock']), int(excavator_l['attack']), int(excavator_l['cost'])]}
-
-    # Init the game loop
-    data = create_data(config, path_game_config)
-
-    # Check if the game_config file has been read
-    if data is None:
-        print('No game_config.mw file or path: %s is wrong.' % path_game_config)
-        return
-
-    # Unpack game structure
-    vessel_stats = data[0]
-    player_estate = data[1]
-    environment_stats = data[2]
-    vessel_position = data[3]
-    asteroid_position = data[4]
-    vessel_start_position = data[5]
-    base_position = data[6]
-
-    # Init the game
-    nb_ai = config['general'][1]
-    final_coordinate = [{}, {}]
-    game_loop = True
-
-    # Draw the map for the first time
-    ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid_position, base_position)
-
-    _round = 0
-
-    while game_loop:
-
-        # Check how many ai's
-        if nb_ai == 2:
-            command_p1 = ai(0, vessel_stats, environment_stats, player_estate, final_coordinate, config)
-            command_p2 = ai(1, vessel_stats, environment_stats, player_estate, final_coordinate, config)
-            print('AI 1 say: %s' % command_p1)
-            print('AI 2 say: %s' % command_p2)
-
-        elif nb_ai == 1:
-            command_p1 = input('Player 1:')
-            command_p2 = ai(1, vessel_stats, environment_stats, player_estate, final_coordinate, config)
-            print('AI say: %s' % command_p2)
-        else:
-            command_p1 = input('Player 1:')
-            command_p2 = input('Player 2:')
-
-        get_order([command_p1, command_p2], vessel_stats, player_estate, environment_stats, vessel_position,
-                  final_coordinate, vessel_start_position, asteroid_position, base_position, config)
-
-        get_ore(vessel_stats, player_estate, environment_stats, config)
-
-        ui(vessel_stats, player_estate, vessel_position, environment_stats, asteroid_position, base_position)
-
-        # Check if the game end
-        for player in player_estate:
-
-            base = player['base_hp']
-            ore = player['ore_amount']
-            vessel = player['vessel']
-
-            if ore == 0 and vessel == [] or base <= 0 or config['general'][4] == _round:
-                game_loop = False
-
-        _round += 1
-
-    print('Game over')
-
-
-def str2bool(string):
-    """
-    If input string equal to True return True, False other wise.
-
-    Parameters:
-    -----------
-    string: String to test (str)
-
-    Return:
-    -------
-    Result: True or False (bool)
-
-    Version:
-    --------
-    Spec : Ryan Rennoir V.1 (15/04/2018)
-    Impl : Ryan Rennoir V.1 (15/04/2018)
-    """
-    string = string.lower()
-    if string == 'true':
-        return True
-
-    return False
 
 
 game('./config.ini', './game_config.mw')
