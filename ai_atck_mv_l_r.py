@@ -1,5 +1,5 @@
 from random import randint
-
+import copy
 
 def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate, config):
     """
@@ -22,9 +22,9 @@ def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate,
     """
     # TODO make the real ai
     orders = ''
-    player_estate_bis = list(player_estate) 
-    vessel_stats_bis = list(vessel_stats) 
-    vessel_position_bis = list(vessel_position)
+    player_estate_bis = copy.deepcopy(player_estate) 
+    vessel_stats_bis = copy.deepcopy(vessel_stats) 
+    vessel_position_bis = copy.deepcopy(vessel_position)
 
     # shopping
     # Make a counter of the vessels [total,[excavators],[aggressive_vessels]], where excavators are in the order [S,M,L] and the aggressive_vessels are in the order [scout, warship]
