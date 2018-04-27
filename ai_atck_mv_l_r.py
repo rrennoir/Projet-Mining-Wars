@@ -22,8 +22,105 @@ def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate,
     """
     # TODO make the real ai
     orders = ''
+    player_estate_bis = player_estate 
+    vessel_stats_bis = vessel_stats 
+    vessel_position_bis = vessel_position
 
     # shopping
+    # Make a counter of the vessels [total,[excavators],[aggressive_vessels]], where excavators are in the order [S,M,L] and the aggressive_vessels are in the order [scout, warship]
+    vessels_counter = [0, [0, 0, 0], [0, 0]]
+    for vessel in vessel_stats_bis [player]:
+        for vessel_type in (('excavator-S', 1, 0), ('excavator-M', 1, 1), ('excavator-L', 1, 2), ('scout', 2, 0), ('warship', 2, 1)) :
+            if vessel_stats_bis [player] [vessel] [0] == vessel_type [0]:
+                vessels_counter [vessel_type [1]] [vessel_type [2]] +=1
+                vessels_counter [0] +=1
+    
+    purchases_done = False 
+    while not purchases_done or player_estate_bis [player] ['ore_amount'] > config ['excavator-S'] [5] :
+    
+        name = ''
+        while name == '' or name in player_estate_bis [player] ['vessel']:
+            name = 'vessel_' + str(randint(0, 200))
+
+
+        # If the player doesn't own enough excavators, buy one
+        if vessels_counter [1] [0] + vessels_counter [1] [1] + vessels_counter [1] [2] < 4 and player_estate_bis [player] ['ore_amount'] >= config['excavator-S'] [5] :
+
+            if vessels_counter [1] [2] < 1 and player_estate_bis [player] ['ore_amount'] >= config['excavator-L'] [5] and vessels_counter [0] >= 2:
+                orders += name + ':' + 'excavator-L' + ' '
+                vessels_counter [1] [2] += 1
+                vessels_counter [0] += 1 
+                create_excavator_l (name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis, vessel_start_position, config)
+
+            elif vessels_counter [1] [1] < 4 and player_estate_bis [player] ['ore_amount'] >= config['excavator-M'] [5] :
+                orders += name + ':' + 'excavator-M' + ' '
+                vessels_counter [1] [1] += 1
+                vessels_counter [0] += 1 
+                create_excavator_m (name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis, vessel_start_position, config)
+
+            else :
+                orders += name + ':' + 'excavator-S' + ' '
+                vessels_counter [1] [0] += 1
+                vessels_counter [0] += 1
+                create_excavator_s (name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis, vessel_start_position, config)
+
+
+        # If the player has enough excavators and doesn't own enough offensive vessels, buy one
+        elif vessels_counter [2] [0] + vessels_counter [2] [0] < 3 and player_estate_bis [player] ['ore_amount'] >= config['excavator-S'] [5]:
+
+            if vessels_counter [2] [1] > 1 and player_estate_bis [player] ['ore_amount'] >= config['warship'] [5] :
+                orders += name + ':' + 'warship' + ' '
+                vessels_counter [2] [1] += 1
+                vessels_counter [0] += 1
+                create_warship (name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis, vessel_start_position, config)
+
+            else :
+                orders += name + ':' + 'scout' + ' '
+                vessels_counter [2] [0] += 1
+                vessels_counter [0] += 1
+                create_scout (name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis, vessel_start_position, config)
+
+        # If the player has enough excavators and offensive vessels
+        else :
+
+            if player_estate_bis [player] [0] >= config['warship'] [5] :
+                orders += name + ':' + 'warship' + ' '
+                vessels_counter [1] [0] += 1
+                vessels_counter [0] += 1
+                create_warship (name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis, vessel_start_position, config)
+
+            elif vessels_counter [1] [2] < 1 or vessels_counter [2] [1] < 1 :
+                purchases_done = True
+
+            else :
+                orders += ''
+                while orders == '' :
+                    random_choice = randint(0, 3)
+
+                    if random_choice == 0 and player_estate_bis [player] ['ore_amount'] >= config['excavator-M'] [5]:
+                        orders += name + ':' + 'excavator-M' + ' '
+                        vessels_counter [1] [1] += 1
+                        vessels_counter [0] += 1
+                        create_excavator_m (name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis, vessel_start_position, config)
+
+                    elif random_choice == 1 and player_estate_bis [player] ['ore_amount'] >= config['excavator-L'] [5]:
+                        orders += name + ':' + 'excavator-L' + ' '
+                        vessels_counter [1] [2] += 1
+                        vessels_counter [0] += 1
+                        create_excavator_l (name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis, vessel_start_position, config)
+
+                    elif random_choice == 2 and player_estate_bis [player] ['ore_amount'] >= config['scout'] [5]:
+                        orders += name + ':' + 'scout' + ' '
+                        vessels_counter [2] [0] += 1
+                        vessels_counter [0] += 1
+                        create_scout (name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis, vessel_start_position, config)
+
+                    elif player_estate_bis [player] [0] >= config['warship'] [5] :
+                        orders += name + ':' + 'warship' + ' '
+                        vessels_counter [2] [1] += 1
+                        vessels_counter [0] += 1
+                        create_warship(name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis, vessel_start_position, config)
+
 
     # lock / release
 
