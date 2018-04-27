@@ -3,6 +3,7 @@ from termcolor import colored
 import configparser
 from random import randint
 import os
+import copy
 
 
 def game(path_config, path_game_config):
@@ -93,14 +94,19 @@ def game(path_config, path_game_config):
 
         # Check how many ai's
         if nb_ai == 2:
-            command_p1 = ai(0, vessel_stats, environment_stats, player_estate, final_coordinate, config)
-            command_p2 = ai(1, vessel_stats, environment_stats, player_estate, final_coordinate, config)
+            command_p1 = ai(0, vessel_stats, environment_stats, player_estate, final_coordinate, vessel_position,
+                            vessel_start_position, config)
+            command_p2 = ai(1, vessel_stats, environment_stats, player_estate, final_coordinate, vessel_position,
+                            vessel_start_position, config)
+
             print('AI 1 say: %s' % command_p1)
             print('AI 2 say: %s' % command_p2)
 
         elif nb_ai == 1:
             command_p1 = input('Player 1:')
-            command_p2 = ai(1, vessel_stats, environment_stats, player_estate, final_coordinate, config)
+            command_p2 = ai(1, vessel_stats, environment_stats, player_estate, final_coordinate, vessel_position,
+                            vessel_start_position, config)
+
             print('AI say: %s' % command_p2)
         else:
             command_p1 = input('Player 1:')
@@ -361,7 +367,8 @@ def create_base_position(player_estate):
     return base_position
 
 
-def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate, config):
+def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate, vessel_position,
+       vessel_start_position, config):
     """
     Calculate what the IA will do.
 
@@ -383,7 +390,118 @@ def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate,
     # TODO make the real ai
     orders = ''
 
+    # Copying the data structure
+    player_estate_bis = copy.deepcopy(player_estate)
+    vessel_stats_bis = copy.deepcopy(vessel_stats)
+    vessel_position_bis = copy.deepcopy(vessel_position)
+
     # shopping
+    # Make a counter of the vessels [total,[excavators],[aggressive_vessels]], where excavators are in the order
+    #  [S,M,L] and the aggressive_vessels are in the order [scout, warship]
+    vessels_counter = [0, [0, 0, 0], [0, 0]]
+    for vessel in vessel_stats_bis[player]:
+        for vessel_type in (('excavator-S', 1, 0), ('excavator-M', 1, 1),
+                            ('excavator-L', 1, 2), ('scout', 2, 0), ('warship', 2, 1)):
+            if vessel_stats_bis[player][vessel][0] == vessel_type[0]:
+                vessels_counter[vessel_type[1]][vessel_type[2]] += 1
+                vessels_counter[0] += 1
+
+    purchases_done = False
+    while not purchases_done or player_estate_bis[player]['ore_amount'] > config['excavator-S'][5]:
+
+        name = ''
+        while name == '' or name in player_estate_bis[player]['vessel']:
+            name = 'vessel_' + str(randint(0, 200))
+
+        # If the player doesn't own enough excavators, buy one
+        if vessels_counter[1][0] + vessels_counter[1][1] + vessels_counter[1][2] < 4 \
+                and player_estate_bis[player]['ore_amount'] >= config['excavator-S'][5]:
+
+            if vessels_counter[1][2] < 1 and player_estate_bis[player]['ore_amount'] >= config['excavator-L'][5] and \
+                    vessels_counter[0] >= 2:
+                orders += name + ':' + 'excavator-L' + ' '
+                vessels_counter[1][2] += 1
+                vessels_counter[0] += 1
+                create_excavator_l(name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis,
+                                   vessel_start_position, config)
+
+            elif vessels_counter[1][1] < 4 and player_estate_bis[player]['ore_amount'] >= config['excavator-M'][5]:
+                orders += name + ':' + 'excavator-M' + ' '
+                vessels_counter[1][1] += 1
+                vessels_counter[0] += 1
+                create_excavator_m(name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis,
+                                   vessel_start_position, config)
+
+            else:
+                orders += name + ':' + 'excavator-S' + ' '
+                vessels_counter[1][0] += 1
+                vessels_counter[0] += 1
+                create_excavator_s(name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis,
+                                   vessel_start_position, config)
+
+        # If the player has enough excavators and doesn't own enough offensive vessels, buy one
+        elif vessels_counter[2][0] + vessels_counter[2][0] < 3 and player_estate_bis[player]['ore_amount'] >= \
+                config['excavator-S'][5]:
+
+            if vessels_counter[2][1] > 1 and player_estate_bis[player]['ore_amount'] >= config['warship'][5]:
+                orders += name + ':' + 'warship' + ' '
+                vessels_counter[2][1] += 1
+                vessels_counter[0] += 1
+                create_warship(name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis, vessel_start_position,
+                               config)
+
+            else:
+                orders += name + ':' + 'scout' + ' '
+                vessels_counter[2][0] += 1
+                vessels_counter[0] += 1
+                create_scout(name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis, vessel_start_position,
+                             config)
+
+        # If the player has enough excavators and offensive vessels
+        else:
+
+            if player_estate_bis[player]['ore_amount'] >= config['warship'][5]:
+                orders += name + ':' + 'warship' + ' '
+                vessels_counter[1][0] += 1
+                vessels_counter[0] += 1
+                create_warship(name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis, vessel_start_position,
+                               config)
+
+            elif vessels_counter[1][2] < 1 or vessels_counter[2][1] < 1:
+                purchases_done = True
+
+            else:
+                orders += ''
+                while orders == '':
+                    random_choice = randint(0, 3)
+
+                    if random_choice == 0 and player_estate_bis[player]['ore_amount'] >= config['excavator-M'][5]:
+                        orders += name + ':' + 'excavator-M' + ' '
+                        vessels_counter[1][1] += 1
+                        vessels_counter[0] += 1
+                        create_excavator_m(name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis,
+                                           vessel_start_position, config)
+
+                    elif random_choice == 1 and player_estate_bis[player]['ore_amount'] >= config['excavator-L'][5]:
+                        orders += name + ':' + 'excavator-L' + ' '
+                        vessels_counter[1][2] += 1
+                        vessels_counter[0] += 1
+                        create_excavator_l(name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis,
+                                           vessel_start_position, config)
+
+                    elif random_choice == 2 and player_estate_bis[player]['ore_amount'] >= config['scout'][5]:
+                        orders += name + ':' + 'scout' + ' '
+                        vessels_counter[2][0] += 1
+                        vessels_counter[0] += 1
+                        create_scout(name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis,
+                                     vessel_start_position, config)
+
+                    elif player_estate_bis[player][0] >= config['warship'][5]:
+                        orders += name + ':' + 'warship' + ' '
+                        vessels_counter[2][1] += 1
+                        vessels_counter[0] += 1
+                        create_warship(name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis,
+                                       vessel_start_position, config)
 
     # lock / release
 
@@ -399,11 +517,13 @@ def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate,
 
         attacker = []
         excavator = []
-        for ships in vessel_stats:
-            if ships[0] in ('scout', 'warship'):
-                attacker.append(ships)
+        for ships in vessel_stats[player]:
+            ships_data = vessel_stats[player][ships]
+
+            if ships_data[0] in ('scout', 'warship'):
+                attacker.append(ships_data)
             else:
-                excavator.append(ships)
+                excavator.append(ships_data)
 
         if len(vessel_stats[enemy_player]) != 0:
             for vessel in attacker:
@@ -411,13 +531,13 @@ def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate,
                 vessel_distance = []
 
                 for enemy in enemy_vessel:
-                    coord = enemy[1]
-                    enemy_name = enemy_vessel.index(enemy)
+                    enemy_data = vessel_stats[enemy_player][enemy]
+                    coord = enemy_data[1]
 
                     # Measures the Manhattan distance(|row_b - row_a| + |column_b - column_a|)
                     delta = abs(coord[0] - vessel_center[0]) + abs(coord[1] - vessel_center[1])
 
-                    vessel_distance.append([enemy_name, delta])
+                    vessel_distance.append([enemy, delta])
 
                 # Find the closest vessel
                 closest = min(vessel_distance)
@@ -464,14 +584,16 @@ def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate,
                 excavator_attacked = False
                 defend_excavator = ''
                 for vessels in vessel_stats[player]:
+                    vessel_data = vessel_stats[player][vessels]
 
                     # For each excavator
-                    if vessels[0] in ('excavator-S', 'excavator-M', 'excavator-L'):
-                        vessels_coord = vessels[1]
+                    if vessel_data[0] in ('excavator-S', 'excavator-M', 'excavator-L'):
+                        vessels_coord = vessel_data[1]
 
                         # Get the distance between an enemy and excavator to defend them
                         for enemy_vessel in vessel_stats[enemy_player]:
-                            enemy_center = enemy_vessel[1]
+                            enemy_vessel_data = vessel_stats[enemy_player][enemy_vessel]
+                            enemy_center = enemy_vessel_data[1]
 
                             _delta = abs(vessels_coord[0] - enemy_center[0]) + abs(vessels_coord[1] - enemy_center[1])
 
@@ -532,50 +654,50 @@ def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate,
 
                 orders += order_attack_ia
 
-            # if len(excavator) != 0:
-            for excavators in excavator:
-                order_excavator_ia = ''
-                vessel_type = excavators[0]
-                max_ore = config[vessel_type][2]
-                ore = excavators[3]
+        # if len(excavator) != 0:
+        for excavators in excavator:
+            order_excavator_ia = ''
+            vessel_type = excavators[0]
+            max_ore = config[vessel_type][2]
+            ore = excavators[3]
 
-                if max_ore == ore:
-                    excavator_name = vessel_stats[player].index(excavators)
-                    base = player_estate['base']
+            if max_ore == ore:
+                excavator_name = vessel_stats[player].index(excavators)
+                base = player_estate['base']
 
-                    if excavators[4] == 'lock':
-                        # Release
-                        order_excavator_ia += '%s:release' % excavator_name
+                if excavators[4] == 'lock':
+                    # Release
+                    order_excavator_ia += '%s:release' % excavator_name
 
-                        # Check if the vessel is already trying to move
-                        if excavator_name in final_coordinate[player]:
+                    # Check if the vessel is already trying to move
+                    if excavator_name in final_coordinate[player]:
 
-                            # Check if the target isn't the base
-                            target_coordinate = final_coordinate[player][excavator_name]
-                            if target_coordinate == base:
-                                # Already going to base
-                                order_excavator_ia += ''
+                        # Check if the target isn't the base
+                        target_coordinate = final_coordinate[player][excavator_name]
+                        if target_coordinate == base:
+                            # Already going to base
+                            order_excavator_ia += ''
 
-                            else:
-                                # Go to base
-                                order_excavator_ia += '%s:@%s-%s' % excavator_name, base[0], base[1]
+                        else:
+                            # Go to base
+                            order_excavator_ia += '%s:@%s-%s' % excavator_name, base[0], base[1]
 
-                elif ore == 0:
-                    target_asteroid = []
-                    for asteroid in environment_stats['asteroid']:
-                        v_center = excavator[1]
-                        coord_asteroid = asteroid[0]
+            elif ore == 0:
+                target_asteroid = []
+                for asteroid in environment_stats['asteroid']:
+                    v_center = excavators[1]
+                    coord_asteroid = asteroid[0]
 
-                        # Chose a asteroid with ore
-                        if asteroid[1] != 0:
+                    # Chose a asteroid with ore
+                    if asteroid[1] != 0:
 
-                            asteroid_index = environment_stats['asteroid'].index(asteroid)
-                            # Compute the distance
-                            distance = abs(coord_asteroid[0] - v_center[0]) + abs(coord_asteroid[1] - v_center[1])
+                        asteroid_index = environment_stats['asteroid'].index(asteroid)
+                        # Compute the distance
+                        distance = abs(coord_asteroid[0] - v_center[0]) + abs(coord_asteroid[1] - v_center[1])
 
-                            target_asteroid.append([asteroid_index, distance])
+                        target_asteroid.append([asteroid_index, distance])
 
-                orders += order_excavator_ia
+            orders += order_excavator_ia
 
     return orders
 
