@@ -83,7 +83,7 @@ def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate,
         # If the player has enough excavators and offensive vessels
         else :
 
-            if player_estate_bis [player] [0] >= config['warship'] [5] :
+            if player_estate_bis [player] ['ore_amount'] >= config['warship'] [5] :
                 orders += name + ':' + 'warship' + ' '
                 vessels_counter [1] [0] += 1
                 vessels_counter [0] += 1
