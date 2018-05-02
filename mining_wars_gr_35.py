@@ -503,20 +503,11 @@ def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate,
                         create_warship(name, player_estate_bis, player, vessel_stats_bis, vessel_position_bis,
                                        vessel_start_position, config)
 
-    # lock / release
-
-    # attack/move
     if len(vessel_stats[player]) != 0:
-        # Get the coordinate of all enemy vessel
-        if player == 1:
-            enemy_player = 0
-        else:
-            enemy_player = 1
-
-        enemy_vessel = vessel_stats[enemy_player]
 
         attacker = []
         excavator = []
+
         for ships in vessel_stats[player]:
             ships_data = vessel_stats[player][ships]
 
@@ -525,179 +516,231 @@ def ai(player, vessel_stats, environment_stats, player_estate, final_coordinate,
             else:
                 excavator.append(ships_data)
 
-        if len(vessel_stats[enemy_player]) != 0:
-            for vessel in attacker:
-                vessel_center = vessel[1]
-                vessel_distance = []
+        # lock / release
+        orders = ai_mining(player, excavator, vessel_stats, player_estate, environment_stats,
+                           final_coordinate, config, orders)
 
-                for enemy in enemy_vessel:
-                    enemy_data = vessel_stats[enemy_player][enemy]
-                    coord = enemy_data[1]
+        # attack/move for attackers
+        orders = ai_attack(player, attacker, excavator, vessel_stats, player_estate, config, orders)
 
-                    # Measures the Manhattan distance(|row_b - row_a| + |column_b - column_a|)
-                    delta = abs(coord[0] - vessel_center[0]) + abs(coord[1] - vessel_center[1])
+    return orders
 
-                    vessel_distance.append([enemy, delta])
 
-                # Find the closest vessel
-                closest = min(vessel_distance)
-                vessel_index = vessel_distance.index(closest)
-                vessel_name = vessel_distance[vessel_index][0]
+def ai_attack(player, attacker, excavator, vessel_stats, player_estate, config, orders):
+    """
+    Calculate what the IA will do with the vessel capable of attacking.
 
-                # Compute the base distance
-                enemy_base = player_estate[enemy_player]['base']
-                delta_base = abs(enemy_base[0] - vessel_center[0]) + abs(enemy_base[1] + vessel_center[1])
+    Parameters:
+    -----------
+    player : tell the IA, which player she is (0 or 1) (int)
+    vessel_stat : contains the information about the vessels of the players (list)
+    environment_stats : contain the board size and the ore of each asteroid (dictionary)
 
-                # Get the range and name of the attacker
-                v_range = config[vessel[0]][1]
-                attacker_name = vessel_stats.index(attacker)
+    Return:
+    -------
+    orders: the orders of the IA (string)
 
-                # Enemy target coordinate
-                enemy_center = vessel_stats[enemy_player][vessel_name][1]
-                coord_enemy_r = enemy_center[0]
-                coord_enemy_c = enemy_center[1]
+    Version:
+    --------
+    spec: Ryan Rennoir V.1 (07/04/2018)
+    impl: Arnaud Schmetz V.1 (09/04/2018)
+    """
 
-                base_attacked = False
-                defend_base = ''
+    if player == 1:
+        enemy_player = 0
+    else:
+        enemy_player = 1
 
-                # Check if the base is attacked
-                for base_attacker in vessel_stats[enemy_player]:
-                    base = player_estate[player]['base']
-                    enemy_coord = base_attacker[1]
+    enemy_vessel = vessel_stats[enemy_player]
 
-                    delta_b_attack = abs(base[0] - enemy_coord[0]) + abs(base[1] - enemy_coord[1])
+    # Main loop trough vessel
+    for vessel in attacker:
+        vessel_center = vessel[1]
+        vessel_distance = []
 
-                    if delta_b_attack <= 10:
-                        # Vessel in the secure zone
-                        base_attacked = True
-                        delta_target = abs(vessel_center[0] - enemy_coord[0]) + abs(vessel_center[1] - enemy_coord[1])
+        # Compute the enemy distance
+        for enemy in enemy_vessel:
+            enemy_data = vessel_stats[enemy_player][enemy]
+            coord = enemy_data[1]
 
-                        if delta_target > v_range:
-                            # Vessel in range: attack
-                            defend_base = '%s:@%s-%s ' % attacker_name, enemy_coord[0], enemy_coord[0]
+            # Measures the Manhattan distance(|row_b - row_a| + |column_b - column_a|)
+            delta = abs(coord[0] - vessel_center[0]) + abs(coord[1] - vessel_center[1])
 
-                        else:
-                            # Vessel out of range: move
-                            defend_base = '%s:*%s-%s ' % attacker_name, enemy_coord[0], enemy_coord[1]
+            vessel_distance.append([enemy, delta])
 
-                # Check if an excavator is attacked
-                excavator_attacked = False
-                defend_excavator = ''
-                for vessels in vessel_stats[player]:
-                    vessel_data = vessel_stats[player][vessels]
+        # Find the closest vessel
+        closest = min(vessel_distance)
+        vessel_index = vessel_distance.index(closest)
+        vessel_name = vessel_distance[vessel_index][0]
 
-                    # For each excavator
-                    if vessel_data[0] in ('excavator-S', 'excavator-M', 'excavator-L'):
-                        vessels_coord = vessel_data[1]
+        # Compute the base distance
+        enemy_base = player_estate[enemy_player]['base']
+        delta_base = abs(enemy_base[0] - vessel_center[0]) + abs(enemy_base[1] + vessel_center[1])
 
-                        # Get the distance between an enemy and excavator to defend them
-                        for enemy_vessel in vessel_stats[enemy_player]:
-                            enemy_vessel_data = vessel_stats[enemy_player][enemy_vessel]
-                            enemy_center = enemy_vessel_data[1]
+        # Get the range and name of the attacker
+        v_range = config[vessel[0]][1]
+        attacker_name = vessel_stats.index(attacker)
 
-                            _delta = abs(vessels_coord[0] - enemy_center[0]) + abs(vessels_coord[1] - enemy_center[1])
+        # Enemy target coordinate
+        enemy_center = vessel_stats[enemy_player][vessel_name][1]
+        coord_enemy_r = enemy_center[0]
+        coord_enemy_c = enemy_center[1]
 
-                            if _delta <= 5:
-                                # Excavator can be attacked
-                                excavator_attacked = True
+        # Check if the base is attacked
+        base_attacked = False
+        defend_base = ''
+        for base_attacker in vessel_stats[enemy_player]:
+            base = player_estate[player]['base']
+            enemy_coord = base_attacker[1]
 
-                                if _delta <= v_range:
-                                    # Enemy in range of the vessel
-                                    defend_excavator = '%s:*%s-%s ' % attacker_name, enemy_center[0], enemy_center[1]
+            delta_b_attack = abs(base[0] - enemy_coord[0]) + abs(base[1] - enemy_coord[1])
 
-                                else:
-                                    # Enemy out of range move to the enemy
-                                    defend_excavator = '%s:@%s-%s ' % attacker_name, enemy_center[0], enemy_center[1]
+            if delta_b_attack <= 10:
+                # Vessel in the secure zone
+                base_attacked = True
+                delta_target = abs(vessel_center[0] - enemy_coord[0]) + abs(vessel_center[1] - enemy_coord[1])
 
-                # Chose the right order
-                if delta_base >= v_range:
-                    # Attack the base in range
-                    order_attack_ia = '%s:*%s-%s ' % attacker_name, enemy_base[0], enemy_base[1]
-
-                elif base_attacked:
-                    # Move or attack the vessel near the base
-                    order_attack_ia = defend_base
-
-                elif excavator_attacked:
-                    # Move to the excavator or defend it
-                    order_attack_ia = defend_excavator
-
-                elif v_range >= closest:
-                    # Attack the closest enemy
-                    order_attack_ia = '%s:*%s-%s ' % attacker_name, coord_enemy_r, coord_enemy_c
+                if delta_target <= v_range:
+                    # Vessel in range: attack
+                    defend_base = '%s:*%s-%s ' % attacker_name, enemy_coord[0], enemy_coord[0]
 
                 else:
-                    # Move to the enemy base or random move(1/10)
-                    random = randint(1, 10)
+                    # Vessel out of range: move
+                    defend_base = '%s:@%s-%s ' % attacker_name, enemy_coord[0], enemy_coord[1]
 
-                    if random == 1:
-                        # Move random
-                        direction_row = randint(1, 2)
-                        direction_column = randint(1, 2)
-                        case = config['general'][0]
+        # Check if an excavator is attacked
+        excavator_attacked = False
+        defend_excavator = ''
 
-                        # Random direction
-                        if direction_row == 1:
-                            vessel_center[0] += case
-                        else:
-                            vessel_center[0] -= case
+        for enemy_vessel in vessel_stats[enemy_player]:
+            enemy_vessel_data = vessel_stats[enemy_player][enemy_vessel]
+            enemy_center = enemy_vessel_data[1]
+            excavator_coord = excavator[1]
 
-                        if direction_column == 1:
-                            vessel_center[1] += case
-                        else:
-                            vessel_center[1] -= case
+            _delta = abs(excavator_coord[0] - enemy_center[0]) + abs(excavator_coord[1] - enemy_center[1])
 
-                        order_attack_ia = '%s:@%s-%s ' % attacker_name, vessel_center[0], vessel_center[1]
+            if _delta <= 5:
+                # Excavator can be attacked
+                excavator_attacked = True
+
+                if _delta <= v_range:
+                    # Enemy in range of the vessel
+                    defend_excavator = '%s:*%s-%s ' % attacker_name, enemy_center[0], enemy_center[1]
+
+                else:
+                    # Enemy out of range move to the enemy
+                    defend_excavator = '%s:@%s-%s ' % attacker_name, enemy_center[0], enemy_center[1]
+
+        # Chose the right order
+        if delta_base >= v_range:
+            # Attack the base in range
+            order_attack_ia = '%s:*%s-%s ' % attacker_name, enemy_base[0], enemy_base[1]
+
+        elif base_attacked:
+            # Move or attack the vessel near the base
+            order_attack_ia = defend_base
+
+        elif excavator_attacked:
+            # Move to the excavator or defend it
+            order_attack_ia = defend_excavator
+
+        elif v_range >= closest:
+            # Attack the closest enemy
+            order_attack_ia = '%s:*%s-%s ' % attacker_name, coord_enemy_r, coord_enemy_c
+
+        else:
+            # Move to the enemy base or random move(1/10)
+            random = randint(1, 10)
+
+            if random == 1:
+                # Move random
+                direction_row = randint(1, 2)
+                direction_column = randint(1, 2)
+                case = config['general'][0]
+
+                # Random direction
+                if direction_row == 1:
+                    vessel_center[0] += case
+                else:
+                    vessel_center[0] -= case
+
+                if direction_column == 1:
+                    vessel_center[1] += case
+                else:
+                    vessel_center[1] -= case
+
+                order_attack_ia = '%s:@%s-%s ' % attacker_name, vessel_center[0], vessel_center[1]
+
+            else:
+                order_attack_ia = '%s:@%s-%s ' % attacker_name, enemy_base[0], enemy_base[1]
+
+        orders += order_attack_ia
+
+    return orders
+
+
+def ai_mining(player, excavator, vessel_stats, player_estate, environment_stats, final_coordinate, config, orders):
+    """
+    Calculate what the IA will do with the vessel capable of mining.
+
+    Parameters:
+    -----------
+    player : tell the IA, which player she is (0 or 1) (int)
+    vessel_stat : contains the information about the vessels of the players (list)
+    environment_stats : contain the board size and the ore of each asteroid (dictionary)
+
+    Return:
+    -------
+    orders: the orders of the IA (string)
+
+    Version:
+    --------
+    spec: Ryan Rennoir V.1 (07/04/2018)
+    impl: Arnaud Schmetz V.1 (09/04/2018)
+    """
+    for excavators in excavator:
+        order_excavator_ia = ''
+        vessel_type = excavators[0]
+        max_ore = config[vessel_type][2]
+        ore = excavators[3]
+
+        if max_ore == ore:
+            excavator_name = vessel_stats[player].index(excavators)
+            base = player_estate['base']
+
+            if excavators[4] == 'lock':
+                # Release
+                order_excavator_ia += '%s:release' % excavator_name
+
+                # Check if the vessel is already trying to move
+                if excavator_name in final_coordinate[player]:
+
+                    # Check if the target isn't the base
+                    target_coordinate = final_coordinate[player][excavator_name]
+                    if target_coordinate == base:
+                        # Already going to base
+                        order_excavator_ia += ''
 
                     else:
-                        order_attack_ia = '%s:@%s-%s ' % attacker_name, enemy_base[0], enemy_base[1]
+                        # Go to base
+                        order_excavator_ia += '%s:@%s-%s' % excavator_name, base[0], base[1]
 
-                orders += order_attack_ia
+        elif ore == 0:
+            target_asteroid = []
+            for asteroid in environment_stats['asteroid']:
+                v_center = excavators[1]
+                coord_asteroid = asteroid[0]
 
-        # if len(excavator) != 0:
-        for excavators in excavator:
-            order_excavator_ia = ''
-            vessel_type = excavators[0]
-            max_ore = config[vessel_type][2]
-            ore = excavators[3]
+                # Chose a asteroid with ore
+                if asteroid[1] != 0:
 
-            if max_ore == ore:
-                excavator_name = vessel_stats[player].index(excavators)
-                base = player_estate['base']
+                    asteroid_index = environment_stats['asteroid'].index(asteroid)
+                    # Compute the distance
+                    distance = abs(coord_asteroid[0] - v_center[0]) + abs(coord_asteroid[1] - v_center[1])
 
-                if excavators[4] == 'lock':
-                    # Release
-                    order_excavator_ia += '%s:release' % excavator_name
+                    target_asteroid.append([asteroid_index, distance])
 
-                    # Check if the vessel is already trying to move
-                    if excavator_name in final_coordinate[player]:
-
-                        # Check if the target isn't the base
-                        target_coordinate = final_coordinate[player][excavator_name]
-                        if target_coordinate == base:
-                            # Already going to base
-                            order_excavator_ia += ''
-
-                        else:
-                            # Go to base
-                            order_excavator_ia += '%s:@%s-%s' % excavator_name, base[0], base[1]
-
-            elif ore == 0:
-                target_asteroid = []
-                for asteroid in environment_stats['asteroid']:
-                    v_center = excavators[1]
-                    coord_asteroid = asteroid[0]
-
-                    # Chose a asteroid with ore
-                    if asteroid[1] != 0:
-
-                        asteroid_index = environment_stats['asteroid'].index(asteroid)
-                        # Compute the distance
-                        distance = abs(coord_asteroid[0] - v_center[0]) + abs(coord_asteroid[1] - v_center[1])
-
-                        target_asteroid.append([asteroid_index, distance])
-
-            orders += order_excavator_ia
+        orders += order_excavator_ia
 
     return orders
 
