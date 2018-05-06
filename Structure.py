@@ -35,5 +35,5 @@ final_coordinate = [{'vessel_1': ['x', 'y']}, {'vessel_1': ['x', 'y']}]
 vessel_start_position = [[], []]
 base_position = [[], []]
 
-data = [vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position, vessel_start_position,
+game_data = [vessel_stats, player_estate, environment_stats, vessel_position, asteroid_position, vessel_start_position,
         base_position, final_coordinate]

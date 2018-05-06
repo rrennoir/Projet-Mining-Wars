@@ -706,21 +706,23 @@ def ai_mining(player, excavator, game_data, config, orders):
     """
     vessel_stats = game_data[0]
     player_estate = game_data[1]
-    final_coordinate = game_data[6]
+    final_coordinate = game_data[7]
     environment_stats = game_data[2]
 
+    base = player_estate[player]['base']
+    order_excavator_ia = ''
     for excavator_name, excavator_stats in excavator.items():
-        order_excavator_ia = ''
+
         vessel_type = excavator_stats[0]
         max_ore = config[vessel_type][2]
         ore = excavator_stats[3]
+        v_center = excavator_stats[1]
 
         if max_ore == ore:
-            base = player_estate['base']
 
             if excavator_stats[4] == 'lock':
                 # Release
-                order_excavator_ia += '%s:release' % excavator_name
+                order_excavator_ia += '%s:release ' % excavator_name
 
                 # Check if the vessel is already trying to move
                 if excavator_name in final_coordinate[player]:
@@ -731,26 +733,51 @@ def ai_mining(player, excavator, game_data, config, orders):
                         # Already going to base
                         order_excavator_ia += ''
 
-                    else:
-                        # Go to base
-                        order_excavator_ia += '%s:@%s-%s' % excavator_name, base[0], base[1]
+                else:
+                    # Go to base
+                    order_excavator_ia += '%s:@%s-%s ' % (excavator_name, base[0], base[1])
+
+            elif v_center == base:
+                order_excavator_ia += '%s:lock ' % excavator_name
 
         elif ore == 0:
+
             target_asteroid = []
+
             for asteroid in environment_stats['asteroid']:
-                v_center = excavator_stats[1]
+
                 coord_asteroid = asteroid[0]
 
                 # Chose a asteroid with ore
                 if asteroid[1] != 0:
 
                     asteroid_index = environment_stats['asteroid'].index(asteroid)
+
                     # Compute the distance
                     distance = abs(coord_asteroid[0] - v_center[0]) + abs(coord_asteroid[1] - v_center[1])
-
                     target_asteroid.append([asteroid_index, distance])
 
-            order_excavator_ia += '%s:@%s-%s' % excavator_name, coord_asteroid[0], coord_asteroid[1]
+            closest_asteroids = []
+            for asteroids in target_asteroid:
+                closest_asteroids.append(asteroids[1])
+
+            closest_distance = min(closest_asteroids)
+            closest = closest_asteroids.index(closest_distance)
+            asteroid_stats = environment_stats['asteroid'][closest]
+            coord_asteroid = asteroid_stats[0]
+
+            if v_center == base:
+                if excavator_stats[4] == 'lock':
+                    order_excavator_ia += '%s:release ' % excavator_name
+
+                if excavator_name not in final_coordinate[player]:
+                    order_excavator_ia += '%s:@%s-%s ' % (excavator_name, coord_asteroid[0], coord_asteroid[1])
+
+            elif v_center == coord_asteroid:
+                order_excavator_ia += '%s:lock ' % excavator_name
+
+        else:
+            order_excavator_ia += '%s:@%s-%s ' % (excavator_name, base[0], base[1])
 
         orders += order_excavator_ia
 
