@@ -133,16 +133,23 @@ def game(path_config, path_game_config):
         player_estate = game_data[1]
         for player in player_estate:
 
+            other_player = 1
+            if player == 1:
+                other_player = 0
+
             base = player['base_hp']
             ore = player['ore_amount']
             vessel = player['vessel']
 
-            if ore == 0 and vessel == [] or base <= 0 or config['general'][4] == _round:
-                game_loop = False
+            if ore == 0 and vessel == [] or base <= 0:
+                print('%s win !') % other_player
+                return
+
+            elif config['general'][4] == _round:
+                print('Game Over, max round limit reach')
+                return
 
         _round += 1
-
-    print('Game over')
 
 
 def str2bool(string):
@@ -441,7 +448,7 @@ def ai(player, game_data, config):
 
         orders += '%s:warship ' % vessel_name
 
-    elif vessel_stats[player] == [] and ore == 1:
+    elif player_estate[player]['vessel'] == [] and ore == 1:
         while vessel_name in player_estate[player]['vessel']:
             vessel_name += '%s' % randint(1, 10)
 
