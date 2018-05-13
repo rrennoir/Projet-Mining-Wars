@@ -142,7 +142,7 @@ def game(path_config, path_game_config):
             vessel = player['vessel']
 
             if ore == 0 and vessel == [] or base <= 0:
-                print('%s win !') % other_player
+                print('%s win !' % other_player)
                 return
 
             elif config['general'][4] == _round:
@@ -733,6 +733,7 @@ def ai_mining(player, excavator, game_data, config, orders):
             for asteroids in target_asteroid:
                 closest_asteroids.append(asteroids[1])
 
+            # TODO bug if no asteroid with ore
             closest_distance = min(closest_asteroids)
             closest = closest_asteroids.index(closest_distance)
             asteroid_stats = environment_stats['asteroid'][closest]
@@ -1066,10 +1067,10 @@ def ui(game_data):
 
     size = environment_stats['board_size']  # get the board size
     grid = []  # Init the grid
-    for row in range(size[1]):
+    for row in range(size[0]):
         y_row = []
 
-        for column in range(size[0]):
+        for column in range(size[1]):
             case = [row + 1, column + 1]  # case to be check (+ 1 because start in 1,1 not in 0,0)
 
             if not check_base(player_estate, case):  # check if is a base
