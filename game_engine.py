@@ -143,10 +143,18 @@ def game(path_config, path_game_config, remote_IP):
 
             if ore == 0 and vessel == [] or base <= 0:
                 print('Player %s win !' % other_player)
+
+                if config['general'][5]:
+                    disconnect_from_player(connection)
+
                 return
 
             elif config['general'][4] == _round:
                 print('Game Over, max round limit reach')
+
+                if config['general'][5]:
+                    disconnect_from_player(connection)
+
                 return
 
         _round += 1
@@ -1628,15 +1636,15 @@ def get_ore(game_data, config):
             while asteroid_ore != 0:
                 shared_ore = asteroid_ore / vessels_by_asteroid[asteroid][3]
 
-                for vessel in vessels_by_asteroid[asteroid]:
+                for vessel in vessels_by_asteroid[asteroid][0]:
 
                     # if the vessel can get the amount of ore, equitably shared, make the transfer
                     if shared_ore <= vessel[1]:
                         asteroid_ore -= shared_ore
                         vessel_stats[vessel[2]][vessel[0]][3] += shared_ore
-                        vessels_by_asteroid[asteroid][vessels_by_asteroid[asteroid].index(vessel)][1] -= shared_ore
+                        vessels_by_asteroid[asteroid][vessels_by_asteroid[asteroid][0].index(vessel)][1] -= shared_ore
 
-                        if vessels_by_asteroid[asteroid][vessels_by_asteroid[asteroid].index(vessel)][1] == 0:
+                        if vessels_by_asteroid[asteroid][vessels_by_asteroid[asteroid][0].index(vessel)][1] == 0:
                             vessels_by_asteroid[asteroid][3] -= 1
 
                     # else, give him the max of ore the vessel can get, letting a little bit more ore to share
@@ -1644,7 +1652,7 @@ def get_ore(game_data, config):
                     else:
                         environment_stats['asteroid'][vessels_by_asteroid[asteroid][1]][1] -= vessel[1]
                         vessel_stats[vessel[2]][vessel[0]][3] += vessel[1]
-                        vessels_by_asteroid[asteroid][vessels_by_asteroid[asteroid].index(vessel)][1] -= vessel[1]
+                        vessels_by_asteroid[asteroid][vessels_by_asteroid[asteroid][0].index(vessel)][1] -= vessel[1]
                         vessels_by_asteroid[asteroid][3] -= 1
 
 
