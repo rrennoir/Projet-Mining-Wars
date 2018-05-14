@@ -7,7 +7,7 @@ import copy
 from remote_play import *
 
 
-def game(path_config, path_game_config, remote_IP):
+def game(path_config, path_game_config, remote_ip):
     """
     The game itself with the loop and all function call
 
@@ -15,6 +15,7 @@ def game(path_config, path_game_config, remote_IP):
     -----------
     path_config: Path of the config.ini file (str)
     path_game_config: Path of the game_config.mw file (str)
+    remote_IP: ip of the other player (str)
 
     Version:
     --------
@@ -82,15 +83,16 @@ def game(path_config, path_game_config, remote_IP):
     _round = 0
     if config['general'][5]:
         player_id = config['general'][6]
-        # remote_IP = get_IP()
         verbose = False
-        connection = connect_to_player(player_id, remote_IP, verbose)
+        connection = connect_to_player(player_id, remote_ip, verbose)
 
     else:
         player_id = None
         connection = None
 
     while game_loop:
+
+        print('Round %s' % _round)
 
         # Check if the game is online
         if config['general'][5]:
@@ -367,7 +369,7 @@ def create_base_position(player_estate):
     Parameters :
     ------------
     player_estate : Players stats (list)
-    
+
     Version :
     ---------
     Spec: Ryan Rennoir V.1 (3/04/2018)
@@ -499,6 +501,7 @@ def ai_attack(player, attacker, excavator, game_data, config, orders):
     player : tell the IA, which player she is (0 or 1) (int)
     attacker: dictionary wih all attacker stats (dic)
     excavator: dictionary with all excavator stats (dic)
+    game_data: list with all data structure (list)
     config: dictionary with all game parameters (dic)
     orders: orders of the ai (str)
 
@@ -730,35 +733,35 @@ def ai_mining(player, excavator, game_data, config, orders):
 
                 # Chose a asteroid with ore
                 if asteroid[1] != 0:
-
                     asteroid_index = environment_stats['asteroid'].index(asteroid)
 
                     # Compute the distance
                     distance = abs(coord_asteroid[0] - v_center[0]) + abs(coord_asteroid[1] - v_center[1])
                     target_asteroid.append([asteroid_index, distance])
 
-            closest_asteroids = []
-            for asteroids in target_asteroid:
-                closest_asteroids.append(asteroids[1])
+            if len(target_asteroid) != 0:
+                closest_asteroids = []
 
-            # TODO bug if no asteroid with ore
-            closest_distance = min(closest_asteroids)
-            closest = closest_asteroids.index(closest_distance)
-            asteroid_stats = environment_stats['asteroid'][closest]
-            coord_asteroid = asteroid_stats[0]
-            ore_asteroid = asteroid_stats[1]
+                for asteroids in target_asteroid:
+                    closest_asteroids.append(asteroids[1])
 
-            if v_center == base:
-                if excavator_stats[4] == 'lock':
-                    order_excavator_ia += '%s:release ' % excavator_name
+                closest_distance = min(closest_asteroids)
+                closest = closest_asteroids.index(closest_distance)
+                asteroid_stats = environment_stats['asteroid'][closest]
+                coord_asteroid = asteroid_stats[0]
+                ore_asteroid = asteroid_stats[1]
 
-                if excavator_name not in final_coordinate[player]:
-                    order_excavator_ia += '%s:@%s-%s ' % (excavator_name, coord_asteroid[0], coord_asteroid[1])
+                if v_center == base:
+                    if excavator_stats[4] == 'lock':
+                        order_excavator_ia += '%s:release ' % excavator_name
 
-            elif v_center == coord_asteroid:
+                    if excavator_name not in final_coordinate[player]:
+                        order_excavator_ia += '%s:@%s-%s ' % (excavator_name, coord_asteroid[0], coord_asteroid[1])
 
-                if ore_asteroid > 0:
-                    order_excavator_ia += '%s:lock ' % excavator_name
+                elif v_center == coord_asteroid:
+
+                    if ore_asteroid > 0:
+                        order_excavator_ia += '%s:lock ' % excavator_name
 
         else:
             if v_center == base:
@@ -779,13 +782,13 @@ def ai_mining(player, excavator, game_data, config, orders):
 def check_ore_account(player, player_estate, price):
     """
     Check if the player has enough ore to buy the vessel he wants to buy, and if he has, take the ore.
-    
+
     Parameters :
     ------------
     player : Player number 0 or 1 (int)
     player_estate : contains the ore_amount, the vessels and the base of each player (list)
     price : the price of the vessel (int)
-    
+
     Version :
     ---------
     spec : Arnaud Schmetz v.1 (12/04/2018)
@@ -1468,8 +1471,8 @@ def move(vessel_stats, vessel_position, final_coordinate, environment_stats, con
 
 def attack(player, attacker, coord, game_data, config):
     """
-    Make the attack of a vessel on the targeted coordinates 
-    
+    Make the attack of a vessel on the targeted coordinates
+
     Parameters:
     -----------
     player: Player number 0 or 1 of the attacker(int)
@@ -1746,7 +1749,6 @@ def get_order(order, game_data, config):
 
                             # Check state
                             if state == 'lock':
-
                                 vessel_stats[player][vessel_name][4] = 'release'
 
                         else:
@@ -1821,3 +1823,5 @@ def get_order(order, game_data, config):
                     if vessel_name in vessel_stats[player]:
                         attack(player, vessel_name, attack_coord, game_data, config)
 
+
+game('./config.ini', './game_config.mw', '')
