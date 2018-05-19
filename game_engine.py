@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
-from termcolor import colored
 import configparser
 import os
 import copy
 from remote_play import *
 from AI import *
-import colorama
+from colorama import *
 
 
-def game(path_game_config, player_id, remote_ip):
+def game(path_game_config, player_id=1, remote_ip=''):
     """
     The game itself with the loop and all function call
 
@@ -25,7 +24,7 @@ def game(path_game_config, player_id, remote_ip):
     Impl: Ryan Rennoir v.1 (30/03/2018)
             Ryan Rennoir V.2 (27/04/2018)
     """
-    colorama.init()
+    init()  # Colorama init for windows (cmd / ps2)
 
     config = configparser.ConfigParser()
     config.read('./config.ini')
@@ -132,15 +131,15 @@ def game(path_game_config, player_id, remote_ip):
 
         # Check if the game end
         player_estate = game_data[1]
-        for player in player_estate:
+        for player in range(len(player_estate)):
 
             other_player = 1
-            if player == 1:
-                other_player = 0
+            if player == 0:
+                other_player = 2
 
-            base = player['base_hp']
-            ore = player['ore_amount']
-            vessel = player['vessel']
+            base = player_estate[player]['base_hp']
+            ore = player_estate[player]['ore_amount']
+            vessel = player_estate[player]['vessel']
 
             if ore == 0 and vessel == [] or base <= 0:
                 print('Player %s win !' % other_player)
@@ -694,62 +693,46 @@ def ui(game_data):
 
     size = environment_stats['board_size']  # get the board size
     grid = []  # Init the grid
+    board_limit = ''
     for row in range(size[0]):
-        y_row = []
+        y_row = ''
+        board_limit = Back.LIGHTWHITE_EX + '  ' + Style.RESET_ALL
 
         for column in range(size[1]):
+
+            board_limit += Back.LIGHTWHITE_EX + ' ' + Style.RESET_ALL
+
             case = [row + 1, column + 1]  # case to be check (+ 1 because start in 1,1 not in 0,0)
 
-            if not check_base(player_estate, case):  # check if is a base
-                if not check_asteroid(asteroid_position, case):  # check if it's a asteroid
-                    if not check_vessel(vessel_position, case):  # check is it's a vessel
-                        # it's nothing or the base outside(not the center)
-                        color_case = 'white'
-                        for player in range(2):
-                            for position in base_position[player]:
-                                if case == position:
-                                    if player == 0:
-                                        color_case = 'green'
-                                    else:
-                                        color_case = 'red'
+            if check_base(base_position, case):  # check if is a base
 
-                        y_row += colored('□', color_case)
-
-                    else:
-                        # it's a vessel
-                        player, vessel_type = check_vessel_type(vessel_position, vessel_stats, case)
-
-                        # Check the player color
-                        if player == 0:
-                            color = "green"
-                        else:
-                            color = 'red'
-
-                        # Check the vessel types
-                        if vessel_type == 'scout':
-                            symbol = '◇'
-                        elif vessel_type == 'warship':
-                            symbol = '△'
-                        else:
-                            symbol = '◎'
-
-                        vessel_character_ui = colored(symbol, color)
-                        y_row += vessel_character_ui
-
+                # Check the base color
+                if case in base_position[0]:
+                    color = Back.LIGHTBLUE_EX
                 else:
-                    y_row += colored('▣', 'cyan')  # it's an asteroid
+                    color = Back.LIGHTRED_EX
+
+                y_row += (color + ' ' + Style.RESET_ALL)
+
+            elif check_asteroid(asteroid_position, case):  # check if it's a asteroid
+                y_row += Back.YELLOW + ' ' + Style.RESET_ALL
+
+            elif check_vessel(vessel_position, case):  # check is it's a vessel
+                player, vessel_type = check_vessel_type(vessel_position, vessel_stats, case)
+
+                # Check the player color
+                if player == 0:
+                    color = Back.BLUE + ' ' + Style.RESET_ALL
+                else:
+                    color = Back.RED + ' ' + Style.RESET_ALL
+
+                y_row += color
 
             else:
+                # it's nothing or the base outside(not the center)
+                y_row += ' ' + Style.RESET_ALL
 
-                # Check ii it's the player 1 base and put the right color
-                if case == player_estate[0]['base']:
-                    color = 'green'  # Player 1 base
-
-                else:
-                    color = 'red'  # Player 2 base
-
-                y_row += colored('●', color)  # it's a base
-
+        # print(y_row)
         grid.append(y_row)  # add character to the row
 
     # Get the stats to print
@@ -757,9 +740,11 @@ def ui(game_data):
 
     # Init the index for the stats to print on the right
     row_index = 0
+    print(board_limit)
     for row in grid:
         # Init the row to print
-        final_row = ''
+        # print(row)
+        final_row = Back.LIGHTWHITE_EX + ' ' + Style.RESET_ALL
 
         for characters in row:
             final_row += characters
@@ -771,17 +756,17 @@ def ui(game_data):
 
         # Index out of range print nothing
         except IndexError:
-            stats_to_print = ''
+            stats_to_print = ' '
 
         # Print row per row the board with stats on the right
-        print(final_row + ' ', stats_to_print)
+        print(final_row + Back.LIGHTWHITE_EX + ' ' + Style.RESET_ALL, stats_to_print)
 
         # Add 1 to the index
         row_index += 1
 
     # Print the legends at the end
-    print('Color: Green Player 1, Red Player 2\n'
-          'Characters:  □ Nothing, ● Base, ▣ Asteroid, ◎ Excavator, ◇ Scout, △ Warship\n')
+    print(board_limit)
+    print('Color: Blue Player 1, Red Player 2\n')
 
 
 def check_asteroid(asteroid_position, case):
@@ -810,13 +795,13 @@ def check_asteroid(asteroid_position, case):
     return False
 
 
-def check_base(player_estate, case):
+def check_base(base_position, case):
     """
     Check if there is a base at this case.
 
     Parameters:
     -----------
-    player_estate: Player stats (list)
+    base_position:
     case: position to test (list)
 
     Return:
@@ -829,10 +814,8 @@ def check_base(player_estate, case):
     Impl: Ryan Rennoir V.1 (23/03/2018)
     """
     for player in range(2):
-
-        if case == player_estate[player]['base']:
+        if case in base_position[player]:
             return True
-
     return False
 
 
@@ -1438,3 +1421,6 @@ def get_order(order, game_data, config):
                     player = split_orders.index(player_orders)
                     if vessel_name in vessel_stats[player]:
                         attack(player, vessel_name, attack_coord, game_data, config)
+
+
+game('./maps/shattered.mw')
