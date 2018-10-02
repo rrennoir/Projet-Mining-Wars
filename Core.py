@@ -1,5 +1,6 @@
 import pygame
 import configparser
+# import time
 
 
 pygame.init()
@@ -18,7 +19,10 @@ white = (255, 255, 255)
 
 caseSize = 15
 
-displaySize = [1280, 720]
+base1 = [3, 3]
+base2 = [7, 7]
+
+displaySize = [700, 650]
 screen = pygame.display.set_mode(displaySize)
 background = pygame.Surface(screen.get_size())
 clock = pygame.time.Clock()
@@ -37,38 +41,13 @@ def configSetup():
     return config
 
 
-def str2bool(string):
-    """
-    If input string equal to True return True, False other wise.
-
-    Parameters:
-    -----------
-    string: String to test (str)
-
-    Return:
-    -------
-    Result: True or False (bool)
-
-    Version:
-    --------
-    Spec : Ryan Rennoir V.1 (15/04/2018)
-    Impl : Ryan Rennoir V.1 (15/04/2018)
-    """
-    string = string.lower()
-    if string == 'true':
-        return True
-
-    return False
-
-
 class Map:
     def __init__(self, dimention, screenSize):
         self.column = dimention[0]
         self.line = dimention[1]
         self.color = [blueLight, redLight]
         
-        self.tileSize = 15
-
+        self.tileSize = caseSize
 
     def draw(self):
         xOffset = 0
@@ -86,19 +65,22 @@ class Map:
                 if (j + offset) % 2 == 0:
                     index = 1
 
-                rectangle = pygame.Rect(xOffset, yOffset , self.tileSize, self.tileSize)
+                rectangle = pygame.Rect(xOffset, yOffset, self.tileSize, self.tileSize)
                 pygame.draw.rect(screen, self.color[index], rectangle)
+
 
 class Player:
     def __init__(self, config, number):
-        self.baseCoordinate = [0, 0]
-        self.baseHP = int(config['base_hp'])
-        self.ore = int(config['starting_ore'])
+        
+        self.baseHP = config.getint('base_hp')
+        self.ore = config.getint('starting_ore')
         self.vehicles = {}
 
+        self.baseCoordinate = base1
         self.color = blue
         if number != 1:
             self.color = red
+            self.baseCoordinate = base2
 
     def buy(self, name, vehicleClass):
 
@@ -113,17 +95,24 @@ class Player:
             self.vehicles[elements].update()
 
     def draw(self):
+        # Draw Base.
+        size = caseSize * 1
+
+        # -1 because array start at 1,1 not 0,0
+        baseRect = pygame.Rect((self.baseCoordinate[0] - 1) * caseSize,
+                               (self.baseCoordinate[1] - 1) * caseSize, size, size)
+
+        pygame.draw.ellipse(screen, self.color, baseRect)
+
         # Draw vehicles.
         for Vehicle in self.vehicles:
             vehicleObejct = player1.vehicles[Vehicle]
 
-            rectangle = pygame.Rect(vehicleObejct.coord[0], vehicleObejct.coord[1] , caseSize, caseSize)
+            # -1 because array start at 1,1 not 0,0
+            rectangle = pygame.Rect((vehicleObejct.coord[0] - 1) * caseSize,
+                                    (vehicleObejct.coord[1] - 1) * caseSize, caseSize, caseSize)
+
             pygame.draw.rect(screen, white, rectangle)        
-        
-        # Draw Base.
-        size = caseSize * 5
-        baseRect = pygame.Rect(self.baseCoordinate[0], self.baseCoordinate[1], size, size)
-        pygame.draw.ellipse(screen, green, baseRect)
 
     def delVehicles(self, name):
         self.vehicles.pop(name)
@@ -131,12 +120,12 @@ class Player:
 
 class VehiclesClass:
     def __init__(self, vehiclesClass):
-        self.life = int(vehiclesClass['life'])
-        self.range = int(vehiclesClass['range'])
-        self.maxOre = int(vehiclesClass['max ore'])
-        self.state = str2bool(vehiclesClass['lock'])
-        self.attackDmg = int(vehiclesClass['attack'])
-        self.cost = int(vehiclesClass['cost'])
+        self.life = vehiclesClass.getint('life')
+        self.range = vehiclesClass.getint('range')
+        self.maxOre = vehiclesClass.getint('max ore')
+        self.state = vehiclesClass.getboolean('lock')
+        self.attackDmg = vehiclesClass.getint('attack')
+        self.cost = vehiclesClass.getint('cost')
 
 
 class Vehicles:
@@ -151,7 +140,7 @@ class Vehicles:
         self.cost = vehiclesClass.cost
 
         self.ore = 0
-        self.coord = player.baseCoordinate
+        self.coord = player.baseCoordinate.copy()
         self.finalCoordinate = []
 
     def move(self, finalCoord):
@@ -160,14 +149,21 @@ class Vehicles:
             self.finalCoordinate = []
             return
 
-        self.finalCoordinate = finalCoord
 
+        print(finalCoord, self.coord)
+
+
+        self.finalCoordinate = finalCoord
         deltaX = self.finalCoordinate[0] - self.coord[0]
         deltaY = self.finalCoordinate[1] - self.coord[1]
 
-        self.coord[0] += deltaX
-        self.coord[1] += deltaY
-        # TODO
+        print(deltaX, deltaY)
+
+
+        if deltaX != 0:
+            self.coord[0] += deltaX / abs(deltaX)
+        if deltaY != 0:
+            self.coord[1] += deltaY / abs(deltaY)
 
     def attack(self, target):
         pass  # TODO
@@ -184,6 +180,7 @@ class Vehicles:
 
 
 config = configSetup()
+
 configGlob = config['general']
 
 # All vessel class config
@@ -193,7 +190,7 @@ excavator_S = VehiclesClass(config['excavator-S'])
 excavator_M = VehiclesClass(config['excavator-M'])
 excavator_L = VehiclesClass(config['excavator-L'])
 
-map = Map([80, 40], displaySize)
+map = Map([10, 10], displaySize)
 
 player1 = Player(configGlob, 1)
 player2 = Player(configGlob, 2)
@@ -201,26 +198,24 @@ player2 = Player(configGlob, 2)
 player1.buy('jean', excavator_L)
 player1.buy('paul', excavator_M)
 
-player1.vehicles['jean'].move([1, 2])
-player1.update()
-
-# player1.delVehicles('jean')
-
 Ended = False
 while not Ended:
-    clock.tick(60)
+    clock.tick(1)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             loop = False
             quit()
-
     
     map.draw()
+    
+    player1.vehicles['jean'].move([7, 10])
+    player1.vehicles['paul'].move([1, 1])
 
     player1.update()
-    # player2.update()
+
+    player2.update()
 
     player1.draw()
-    # player2.draw()
+    player2.draw()
     pygame.display.update()
     screen.blit(background, (0, 0))
